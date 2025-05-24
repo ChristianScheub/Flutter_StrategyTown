@@ -24,11 +24,11 @@ class CombatSystem {
       
       if (attacker.type == UnitType.virtualTower) {
         print('🗼 Tower killed (non-combat) ${defender.type}!');
-        // Verwende ScoreService für Turmangriffe
-        state = ScoreService.handleUnitKill(state, defender, !attackerIsAI, isTowerKill: true);
+        // Verwende ScoreService für Turmangriffe - use attacker's ownerID for tower kills
+        state = ScoreService.handleUnitKill(state, defender, attacker.ownerID, isTowerKill: true);
       } else {
         // Verwende ScoreService für normale Angriffe
-        state = ScoreService.handleUnitKill(state, defender, !defenderIsAI);
+        state = ScoreService.handleUnitKill(state, defender, attacker.ownerID);
       }
       
       if (defenderIsAI) {
@@ -67,11 +67,11 @@ class CombatSystem {
     if (defenderDefeated) {
       if (attacker.type == UnitType.virtualTower) {
         print('🗼 Tower killed ${defender.type}!');
-        // Verwende ScoreService für Turmangriffe
-        state = ScoreService.handleUnitKill(state, defender, !attackerIsAI, isTowerKill: true);
+        // Verwende ScoreService für Turmangriffe - use attacker's ownerID for tower kills
+        state = ScoreService.handleUnitKill(state, defender, attacker.ownerID, isTowerKill: true);
       } else {
         // Verwende ScoreService für normale Angriffe
-        state = ScoreService.handleUnitKill(state, defender, !defenderIsAI);
+        state = ScoreService.handleUnitKill(state, defender, attacker.ownerID);
       }
     }
 

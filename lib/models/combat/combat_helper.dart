@@ -92,7 +92,7 @@ class CombatHelper {
           enemyFaction: updatedEnemyFaction,
         ),
         targetUnit,
-        true
+        attackingUnit.ownerID
       );
     }
     int damage = attackingUnit.combatCapability!.calculateDamage(targetUnit);
@@ -145,7 +145,7 @@ class CombatHelper {
           enemyFaction: updatedEnemyFaction,
         ),
         targetUnit,
-        true
+        attackingUnit.ownerID
       );
     }
     
@@ -256,7 +256,7 @@ class CombatHelper {
         enemyFaction: updatedEnemyFaction,
       ),
       targetBuilding,
-      true
+      attackingUnit.ownerID
     );
   }
 }
