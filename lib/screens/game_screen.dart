@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_sim_city/services/game_service.dart';
+import 'package:flutter_sim_city/services/controlService/game_controller.dart';
 import 'package:flutter_sim_city/widgets/unified_action_panel.dart';
 import 'package:flutter_sim_city/widgets/game_map.dart';
 import 'package:flutter_sim_city/widgets/resource_panel.dart';
@@ -122,13 +123,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         ? gameState.getValidMovePositions()
                         : [],
                     onTileTap: (position) {
-                      ref.read(gameStateProvider.notifier).selectTile(position);
+                      ref.read(gameControllerProvider).selectTile(position);
                     },
                     onUnitTap: (unitId) {
-                      ref.read(gameStateProvider.notifier).selectUnit(unitId);
+                      ref.read(gameControllerProvider).selectUnit(unitId);
                     },
                     onBuildingTap: (buildingId) {
-                      ref.read(gameStateProvider.notifier).selectBuilding(buildingId);
+                      ref.read(gameControllerProvider).selectBuilding(buildingId);
                     },
                     // Pass enemy units and buildings if enemy faction exists
                     enemyUnits: gameState.enemyFaction?.units,
@@ -143,14 +144,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       gameState: gameState, // Übergebe den gesamten GameState
                       turn: gameState.turn, 
                       onNextTurn: () async {
-                        ref.read(gameStateProvider.notifier).nextTurn();
+                        ref.read(gameControllerProvider).endTurn();
                       },
                       onJumpToFirstCity: () {
-                        ref.read(gameStateProvider.notifier).jumpToFirstCity();
+                        ref.read(gameControllerProvider).jumpToFirstCity();
                       },
                       onJumpToEnemyHQ: gameState.enemyFaction?.headquarters != null 
                         ? () {
-                          ref.read(gameStateProvider.notifier).jumpToEnemyHeadquarters();
+                          ref.read(gameControllerProvider).jumpToEnemyHeadquarters();
                         } 
                         : null,
                     ),
@@ -163,48 +164,48 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             ActionPanel(
               gameState: gameState,
               onFoundCity: () {
-                ref.read(gameStateProvider.notifier).foundCity();
+                ref.read(gameControllerProvider).foundCity();
               },
               onBuildingSelect: (buildingType) {
-                ref.read(gameStateProvider.notifier)
+                ref.read(gameControllerProvider)
                   .selectBuildingToBuild(buildingType);
               },
               onUnitSelect: (unitType) {
-                ref.read(gameStateProvider.notifier)
+                ref.read(gameControllerProvider)
                   .selectUnitToTrain(unitType);
               },
               onBuild: (position) {
-                ref.read(gameStateProvider.notifier).buildBuilding(position);
+                ref.read(gameControllerProvider).buildBuildingAtPosition(position);
               },
               onTrain: (unitType) {
-                ref.read(gameStateProvider.notifier).trainUnit(unitType);
+                ref.read(gameControllerProvider).trainUnitGeneric(unitType);
               },
               onHarvest: () {
-                ref.read(gameStateProvider.notifier).harvestResource();
+                ref.read(gameControllerProvider).harvestResource();
               },
               onClearSelection: () {
-                ref.read(gameStateProvider.notifier).clearSelection();
+                ref.read(gameControllerProvider).clearSelection();
               },
               onBuildFarm: () {
-                ref.read(gameStateProvider.notifier).buildFarm();
+                ref.read(gameControllerProvider).buildFarm();
               },
               onBuildLumberCamp: () {
-                ref.read(gameStateProvider.notifier).buildLumberCamp();
+                ref.read(gameControllerProvider).buildLumberCamp();
               },
               onBuildMine: () {
-                ref.read(gameStateProvider.notifier).buildMine();
+                ref.read(gameControllerProvider).buildMine();
               },
               onBuildBarracks: () {
-                ref.read(gameStateProvider.notifier).buildBarracks();
+                ref.read(gameControllerProvider).buildBarracks();
               },
               onBuildDefensiveTower: () {
-                ref.read(gameStateProvider.notifier).buildDefensiveTower();
+                ref.read(gameControllerProvider).buildDefensiveTower();
               },
               onBuildWall: () {
-                ref.read(gameStateProvider.notifier).buildWall();
+                ref.read(gameControllerProvider).buildWall();
               },
               onUpgradeBuilding: () {
-                ref.read(gameStateProvider.notifier).upgradeBuilding();
+                ref.read(gameControllerProvider).upgradeBuilding();
               },
             ),
           ],
