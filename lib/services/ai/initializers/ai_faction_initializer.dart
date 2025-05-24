@@ -14,29 +14,42 @@ class AIFactionInitializer {
   
   /// Initialisiert eine neue feindliche Fraktion an einer geeigneten Position
   GameState initialize(GameState state) {
+    // Ensure AI player exists in PlayerManager
+    GameState updatedState = state;
+    if (!state.playerManager.hasPlayer("ai1")) {
+      updatedState = state.copyWith(
+        playerManager: state.playerManager.addAIPlayer(
+          id: "ai1",
+          name: "AI Player"
+        )
+      );
+    }
+    
     // Geeignete Position für die feindliche Stadt finden
-    final Position position = _findSuitableLocation(state.map, state.units);
+    final Position position = _findSuitableLocation(updatedState.map, updatedState.units);
     
     // Erstelle die feindliche Fraktion
     final faction = EnemyFaction.create("Feindliche Zivilisation", position);
     
     // Erstelle ein City Center und füge es der Fraktion hinzu
-    final cityCenter = CityCenter.create(position);
+    final cityCenter = CityCenter.create(position, ownerID: "ai1");
     
     // Diese Position auf der Karte als bebaut markieren
-    final tile = state.map.getTile(position);
-    state.map.setTile(tile.copyWith(hasBuilding: true));
+    final tile = updatedState.map.getTile(position);
+    updatedState.map.setTile(tile.copyWith(hasBuilding: true));
     
     // Erstelle einen Farmer als erste Einheit (friedlicher Start)
     final farmer = UnitFactory.createUnit(
       UnitType.farmer, 
-      Position(x: position.x, y: position.y + 1)
+      Position(x: position.x, y: position.y + 1),
+      ownerID: "ai1"
     );
     
     // Erstelle einen Siedler als zweite Einheit
     final settler = UnitFactory.createUnit(
       UnitType.settler,
-      Position(x: position.x - 1, y: position.y)
+      Position(x: position.x - 1, y: position.y),
+      ownerID: "ai1"
     );
     
     // Aktualisiere die Fraktion
@@ -47,8 +60,8 @@ class AIFactionInitializer {
     
     // Aktualisiere den GameState mit Punkten für die KI
     return ScoreService.addCityFoundationPoints(
-      state.copyWith(enemyFaction: updatedFaction),
-      false
+      updatedState.copyWith(enemyFaction: updatedFaction),
+      "ai1"
     );
   }
 

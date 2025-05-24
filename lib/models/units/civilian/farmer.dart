@@ -25,6 +25,7 @@ class Farmer extends CivilianUnit implements BuilderUnit, HarvesterUnit {
     int? currentHealth,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
+    String ownerID = 'player',
     this.buildingCapability,
     this.harvestingCapability,
   }) : super(
@@ -36,17 +37,19 @@ class Farmer extends CivilianUnit implements BuilderUnit, HarvesterUnit {
           isSelected: isSelected,
           maxHealth: maxHealth,
           currentHealth: currentHealth,
+          ownerID: ownerID,
           creationTurn: creationTurn,
           hasBuiltSomething: hasBuiltSomething,
           buildingCapability: buildingCapability,
           harvestingCapability: harvestingCapability,
         );
 
-  factory Farmer.create(Position position, {int creationTurn = 0}) {
+  factory Farmer.create(Position position, {int creationTurn = 0, String? ownerID}) {
     return Farmer(
       id: const Uuid().v4(),
       position: position,
       creationTurn: creationTurn,
+      ownerID: ownerID ?? 'player', // Fallback nur wenn null übergeben wird
       buildingCapability: BuildingCapability(
         buildableTypes: [BuildingType.farm],
         actionCosts: {BuildingType.farm: 2},
@@ -103,6 +106,7 @@ class Farmer extends CivilianUnit implements BuilderUnit, HarvesterUnit {
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
     CombatCapability? combatCapability, // für Signatur-Kompatibilität
+    String? ownerID,
     int? maxHealth,
     int? currentHealth,
     int? creationTurn,
@@ -117,6 +121,7 @@ class Farmer extends CivilianUnit implements BuilderUnit, HarvesterUnit {
       harvestingCapability: harvestingCapability ?? this.harvestingCapability,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       creationTurn: creationTurn ?? this.creationTurn,
       hasBuiltSomething: hasBuiltSomething ?? this.hasBuiltSomething,
     );
@@ -132,6 +137,7 @@ class Farmer extends CivilianUnit implements BuilderUnit, HarvesterUnit {
     int? currentHealth,
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   }) {
@@ -142,6 +148,7 @@ class Farmer extends CivilianUnit implements BuilderUnit, HarvesterUnit {
       isSelected: isSelected ?? this.isSelected,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       buildingCapability: buildingCapability ?? this.buildingCapability,
       harvestingCapability: harvestingCapability ?? this.harvestingCapability,
       creationTurn: creationTurn ?? this.creationTurn,

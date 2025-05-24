@@ -15,6 +15,7 @@ class Barracks extends Building implements UnitTrainer, DefensiveStructure {
     int? maxHealth,
     int? currentHealth,
     Map<ResourceType, int>? trainingCosts,
+    String ownerID = 'player',
   }) : _trainingCosts = trainingCosts ?? {
          ResourceType.food: 50,
          ResourceType.iron: 20,
@@ -28,7 +29,7 @@ class Barracks extends Building implements UnitTrainer, DefensiveStructure {
          currentHealth: currentHealth,
        );
 
-  factory Barracks.create(Position position, {Map<ResourceType, int>? trainingCosts}) {
+  factory Barracks.create(Position position, {Map<ResourceType, int>? trainingCosts, required String ownerID}) {
     return Barracks(
       id: const Uuid().v4(),
       position: position,
@@ -50,6 +51,7 @@ class Barracks extends Building implements UnitTrainer, DefensiveStructure {
     int? level,
     int? maxHealth,
     int? currentHealth,
+    String? ownerID,
     Map<ResourceType, int>? trainingCosts,
   }) {
     return Barracks(
@@ -58,6 +60,7 @@ class Barracks extends Building implements UnitTrainer, DefensiveStructure {
       level: level ?? this.level,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       trainingCosts: trainingCosts ?? _trainingCosts,
     );
   }

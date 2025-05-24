@@ -23,6 +23,7 @@ class Commander extends MilitaryUnit implements BuilderUnit {
     this.buildingCapability,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: UnitType.commander,
@@ -36,7 +37,7 @@ class Commander extends MilitaryUnit implements BuilderUnit {
           hasBuiltSomething: hasBuiltSomething,
         );
 
-  factory Commander.create(Position position, {int creationTurn = 0}) {
+  factory Commander.create(Position position, {int creationTurn = 0, required String ownerID}) {
     return Commander(
       id: const Uuid().v4(),
       position: position,
@@ -85,6 +86,7 @@ class Commander extends MilitaryUnit implements BuilderUnit {
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
     CombatCapability? combatCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   }) {
@@ -95,6 +97,7 @@ class Commander extends MilitaryUnit implements BuilderUnit {
       isSelected: isSelected ?? this.isSelected,
       combatCapability: (combatCapability ?? this.combatCapability) as CombatCapability,
       buildingCapability: buildingCapability ?? this.buildingCapability,
+      ownerID: ownerID ?? this.ownerID,
       creationTurn: creationTurn ?? this.creationTurn,
       hasBuiltSomething: hasBuiltSomething ?? this.hasBuiltSomething,
     );

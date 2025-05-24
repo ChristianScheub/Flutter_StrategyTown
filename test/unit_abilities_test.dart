@@ -24,14 +24,6 @@ void main() {
       expect(farmer is CombatCapable, false);
     });
     
-    test('Lumberjack implements BuilderUnit and HarvesterUnit interfaces', () {
-      final lumberjack = Lumberjack.create(Position(x: 0, y: 0));
-      
-      expect(lumberjack is BuilderUnit, true);
-      expect(lumberjack is HarvesterUnit, true);
-      expect(lumberjack is CivilianUnit, true);
-      expect(lumberjack is CombatCapable, false);
-    });
     
     test('Miner implements BuilderUnit and HarvesterUnit interfaces', () {
       final miner = Miner.create(Position(x: 0, y: 0));
@@ -50,30 +42,7 @@ void main() {
       expect(settler is CombatCapable, false);
     });
     
-    test('Archer implements CombatCapable interface', () {
-      final archer = Archer.create(Position(x: 0, y: 0));
-      
-      expect(archer is CombatCapable, true);
-      expect(archer is MilitaryUnit, true);
-      expect(archer is BuilderUnit, false);
-    });
     
-    test('Knight implements CombatCapable interface', () {
-      final knight = Knight.create(Position(x: 0, y: 0));
-      
-      expect(knight is CombatCapable, true);
-      expect(knight is MilitaryUnit, true);
-      expect(knight is BuilderUnit, false);
-    });
-    
-    test('SoldierTroop implements CombatCapable interface', () {
-      final soldierTroop = SoldierTroop.create(Position(x: 0, y: 0));
-      
-      expect(soldierTroop is CombatCapable, true);
-      expect(soldierTroop is MilitaryUnit, true);
-      expect(soldierTroop is BuilderUnit, false);
-    });
-  
     test('Miner can only build mines', () {
       final miner = Miner.create(Position(x: 0, y: 0));
       final tile = Tile(

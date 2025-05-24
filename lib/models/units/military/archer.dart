@@ -26,6 +26,7 @@ class Archer extends MilitaryUnit {
     required CombatCapability combatCapability,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: UnitType.archer,
@@ -38,7 +39,7 @@ class Archer extends MilitaryUnit {
           hasBuiltSomething: hasBuiltSomething,
         );
 
-  factory Archer.create(Position position, {int creationTurn = 0}) {
+  factory Archer.create(Position position, {int creationTurn = 0, required String ownerID}) {
     return Archer(
       id: const Uuid().v4(),
       position: position,
@@ -60,6 +61,7 @@ class Archer extends MilitaryUnit {
     CombatCapability? combatCapability,
     HarvestingCapability? harvestingCapability,
     BuildingCapability? buildingCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   }) {
@@ -71,6 +73,7 @@ class Archer extends MilitaryUnit {
       combatCapability: combatCapability,
       harvestingCapability: harvestingCapability,
       buildingCapability: buildingCapability,
+      ownerID: ownerID,
       creationTurn: creationTurn,
       hasBuiltSomething: hasBuiltSomething,
     );
@@ -80,6 +83,7 @@ class Archer extends MilitaryUnit {
       actionsLeft: values['actionsLeft'] as int,
       isSelected: values['isSelected'] as bool,
       combatCapability: values['combatCapability'] as CombatCapability,
+      ownerID: values['ownerID'] as String,
       creationTurn: values['creationTurn'] as int,
       hasBuiltSomething: values['hasBuiltSomething'] as bool,
     );

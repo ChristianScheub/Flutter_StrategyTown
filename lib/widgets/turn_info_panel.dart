@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_sim_city/models/buildings/building.dart';
 import 'package:flutter_sim_city/models/game/game_state.dart';
+import 'package:flutter_sim_city/services/score_service.dart';
 
 class TurnInfoPanel extends StatelessWidget {
   final GameState gameState;
@@ -39,6 +40,72 @@ class TurnInfoPanel extends StatelessWidget {
     }
   }
 
+  Widget _buildPlayerScores(BuildContext context) {
+    final allPlayerPoints = ScoreService.getAllPlayerPoints(gameState);
+    final playerRanking = ScoreService.getPlayerRanking(gameState);
+    
+    if (allPlayerPoints.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        // Show top 3 players or all if less than 4 players
+        ...playerRanking.take(3).map((entry) {
+          final playerId = entry.key;
+          final points = entry.value;
+          final player = gameState.playerManager.getPlayer(playerId);
+          
+          if (player == null) return const SizedBox.shrink();
+          
+          final isLeader = playerId == ScoreService.getLeadingPlayer(gameState);
+          final isHuman = player.isHuman;
+          
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 1),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isHuman ? Icons.person : Icons.computer,
+                  color: isHuman ? Colors.blue : Colors.red.shade700,
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                if (isLeader)
+                  Icon(Icons.emoji_events, color: Colors.amber, size: 14),
+                const SizedBox(width: 2),
+                Expanded(
+                  child: Text(
+                    '${player.name}: $points',
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      fontWeight: isLeader ? FontWeight.bold : FontWeight.normal,
+                      color: isLeader ? Colors.amber.shade700 : null,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+        
+        // Show "..." if there are more than 3 players
+        if (playerRanking.length > 3)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text(
+              '... and ${playerRanking.length - 3} more',
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                fontStyle: FontStyle.italic,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -65,27 +132,35 @@ class TurnInfoPanel extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
           ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.emoji_events, color: Colors.amber, size: 18),
-              const SizedBox(width: 4),
-              Text('Player: ${gameState.playerPoints}',
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(width: 12),
-              Icon(Icons.computer, color: Colors.red.shade700, size: 18),
-              const SizedBox(width: 4),
-              Text('KI: ${gameState.aiPoints}',
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontWeight: FontWeight.bold)),
-            ],
+          const SizedBox(height: 8),
+          
+          // Player scores section
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Player Scores',
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                _buildPlayerScores(context),
+              ],
+            ),
           ),
-          if (gameState.enemyFaction != null)
+          
+          if (gameState.enemyFaction != null) ...[
+            const SizedBox(height: 8),
             GestureDetector(
               onTap: onJumpToEnemyHQ,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-                margin: const EdgeInsets.only(top: 4.0, bottom: 8.0),
                 decoration: BoxDecoration(
                   color: Colors.red.withOpacity(0.1),
                   border: Border.all(color: Colors.red.shade800, width: 1),
@@ -166,6 +241,8 @@ class TurnInfoPanel extends StatelessWidget {
                 ),
               ),
             ),
+          ],
+          
           const SizedBox(height: 12),
           Container(
             width: double.infinity,

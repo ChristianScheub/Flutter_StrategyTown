@@ -15,6 +15,7 @@ class Warehouse extends Building implements ResourceStorage {
     required this.baseStorage,
     int? maxHealth,
     int? currentHealth,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: BuildingType.warehouse,
@@ -24,7 +25,7 @@ class Warehouse extends Building implements ResourceStorage {
           currentHealth: currentHealth,
         );
 
-  factory Warehouse.create(Position position, {int? baseStorage}) {
+  factory Warehouse.create(Position position, {int? baseStorage, required String ownerID}) {
     return Warehouse(
       id: const Uuid().v4(),
       position: position,
@@ -40,6 +41,7 @@ class Warehouse extends Building implements ResourceStorage {
     int? level,
     int? maxHealth,
     int? currentHealth,
+    String? ownerID,
     int? baseStorage,
   }) {
     return Warehouse(
@@ -48,6 +50,7 @@ class Warehouse extends Building implements ResourceStorage {
       level: level ?? this.level,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       baseStorage: baseStorage ?? this.baseStorage,
     );
   }

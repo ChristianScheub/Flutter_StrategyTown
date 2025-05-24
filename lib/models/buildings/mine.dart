@@ -15,6 +15,7 @@ class Mine extends Building {
     required this.ironPerTurn,
     int? maxHealth,
     int? currentHealth,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: BuildingType.mine,
@@ -22,9 +23,10 @@ class Mine extends Building {
           level: level,
           maxHealth: maxHealth,
           currentHealth: currentHealth,
+          ownerID: ownerID,
         );
 
-  factory Mine.create(Position position, {Map<ResourceType, int>? productionValues, bool isIronMine = false}) {
+  factory Mine.create(Position position, {Map<ResourceType, int>? productionValues, bool isIronMine = false, required String ownerID}) {
     final defaultStone = baseProductionValues[BuildingType.mine]?[ResourceType.stone] ?? 8;
     final defaultIron = baseProductionValues[BuildingType.mine]?[ResourceType.iron] ?? 3;
     final stone = productionValues != null && productionValues.containsKey(ResourceType.stone)
@@ -49,6 +51,7 @@ class Mine extends Building {
     int? level,
     int? maxHealth,
     int? currentHealth,
+    String? ownerID,
     int? stonePerTurn,
     int? ironPerTurn,
   }) {
@@ -58,6 +61,7 @@ class Mine extends Building {
       level: level ?? this.level,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       stonePerTurn: stonePerTurn ?? this.stonePerTurn,
       ironPerTurn: ironPerTurn ?? this.ironPerTurn,
     );

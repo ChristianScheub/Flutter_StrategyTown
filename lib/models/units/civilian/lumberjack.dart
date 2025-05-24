@@ -25,6 +25,7 @@ class Lumberjack extends CivilianUnit implements BuilderUnit, HarvesterUnit {
     int? currentHealth,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
+    String ownerID = 'player',
     this.harvestingCapability,
     this.buildingCapability,
   }) : super(
@@ -40,9 +41,10 @@ class Lumberjack extends CivilianUnit implements BuilderUnit, HarvesterUnit {
           hasBuiltSomething: hasBuiltSomething,
           buildingCapability: buildingCapability,
           harvestingCapability: harvestingCapability,
+          ownerID: ownerID,
         );
 
-  factory Lumberjack.create(Position position, {int creationTurn = 0}) {
+  factory Lumberjack.create(Position position, {int creationTurn = 0, required String ownerID}) {
     return Lumberjack(
       id: const Uuid().v4(),
       position: position,
@@ -96,7 +98,8 @@ class Lumberjack extends CivilianUnit implements BuilderUnit, HarvesterUnit {
     bool? isSelected,
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
-    CombatCapability? combatCapability, // für Signatur-Kompatibilität
+    CombatCapability? combatCapability,
+    String? ownerID,
     int? maxHealth,
     int? currentHealth,
     int? creationTurn,
@@ -111,6 +114,7 @@ class Lumberjack extends CivilianUnit implements BuilderUnit, HarvesterUnit {
       harvestingCapability: harvestingCapability ?? this.harvestingCapability,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       creationTurn: creationTurn ?? this.creationTurn,
       hasBuiltSomething: hasBuiltSomething ?? this.hasBuiltSomething,
     );
@@ -126,6 +130,7 @@ class Lumberjack extends CivilianUnit implements BuilderUnit, HarvesterUnit {
     int? currentHealth,
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   }) {
@@ -138,6 +143,7 @@ class Lumberjack extends CivilianUnit implements BuilderUnit, HarvesterUnit {
       currentHealth: currentHealth ?? this.currentHealth,
       buildingCapability: buildingCapability ?? this.buildingCapability,
       harvestingCapability: harvestingCapability ?? this.harvestingCapability,
+      ownerID: ownerID ?? this.ownerID,
       creationTurn: creationTurn ?? this.creationTurn,
       hasBuiltSomething: hasBuiltSomething ?? this.hasBuiltSomething,
     );

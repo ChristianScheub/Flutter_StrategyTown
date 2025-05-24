@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 
 class DefensiveTower extends Building implements DefensiveStructure {
   final int baseAttackValue;
+  final String ownerID;
   
   DefensiveTower({
     required String id,
@@ -17,6 +18,7 @@ class DefensiveTower extends Building implements DefensiveStructure {
     required this.baseAttackValue,
     int? maxHealth,
     int? currentHealth,
+    required this.ownerID,
   }) : super(
           id: id,
           type: BuildingType.defensiveTower,
@@ -26,11 +28,12 @@ class DefensiveTower extends Building implements DefensiveStructure {
           currentHealth: currentHealth,
         );
 
-  factory DefensiveTower.create(Position position, {int? baseAttackValue}) {
+  factory DefensiveTower.create(Position position, {int? baseAttackValue, required String ownerID}) {
     return DefensiveTower(
       id: const Uuid().v4(),
       position: position,
       baseAttackValue: baseAttackValue ?? 10,
+      ownerID: '',
     );
   }
 
@@ -42,6 +45,7 @@ class DefensiveTower extends Building implements DefensiveStructure {
     int? level,
     int? maxHealth,
     int? currentHealth,
+    String? ownerID,
     int? baseAttackValue,
   }) {
     return DefensiveTower(
@@ -50,6 +54,7 @@ class DefensiveTower extends Building implements DefensiveStructure {
       level: level ?? this.level,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       baseAttackValue: baseAttackValue ?? this.baseAttackValue,
     );
   }
@@ -124,5 +129,5 @@ class DefensiveTower extends Building implements DefensiveStructure {
   }
 
   @override
-  List<Object?> get props => [...super.props, baseAttackValue];
+  List<Object?> get props => [...super.props, baseAttackValue, ownerID];
 }

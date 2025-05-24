@@ -20,6 +20,7 @@ abstract class CivilianUnit extends Unit {
     bool isSelected = false,
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
+    String ownerID = 'player',
     int creationTurn = 0,
     bool hasBuiltSomething = false,
   }) : currentHealth = currentHealth ?? maxHealth,
@@ -32,6 +33,7 @@ abstract class CivilianUnit extends Unit {
           isSelected: isSelected,
           buildingCapability: buildingCapability,
           harvestingCapability: harvestingCapability,
+          ownerID: ownerID,
           creationTurn: creationTurn,
           hasBuiltSomething: hasBuiltSomething,
         );
@@ -45,6 +47,7 @@ abstract class CivilianUnit extends Unit {
     int? currentHealth,
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   });
@@ -58,6 +61,7 @@ abstract class CivilianUnit extends Unit {
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
     CombatCapability? combatCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   }) {
@@ -69,6 +73,7 @@ abstract class CivilianUnit extends Unit {
       'buildingCapability': buildingCapability ?? this.buildingCapability,
       'harvestingCapability': harvestingCapability ?? this.harvestingCapability,
       'combatCapability': combatCapability ?? this.combatCapability,
+      'ownerID': ownerID ?? this.ownerID,
       'creationTurn': creationTurn ?? this.creationTurn,
       'hasBuiltSomething': hasBuiltSomething ?? this.hasBuiltSomething,
     };
@@ -87,6 +92,7 @@ abstract class MilitaryUnit extends Unit {
     required CombatCapability combatCapability,
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
+    String ownerID = 'player',
     int creationTurn = 0,
     bool hasBuiltSomething = false,
   }) : super(
@@ -99,6 +105,7 @@ abstract class MilitaryUnit extends Unit {
           buildingCapability: buildingCapability,
           harvestingCapability: harvestingCapability,
           combatCapability: combatCapability,
+          ownerID: ownerID,
           creationTurn: creationTurn,
           hasBuiltSomething: hasBuiltSomething,
         );
@@ -112,6 +119,7 @@ abstract class MilitaryUnit extends Unit {
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
     CombatCapability? combatCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   }) {
@@ -123,6 +131,7 @@ abstract class MilitaryUnit extends Unit {
       'buildingCapability': buildingCapability ?? this.buildingCapability,
       'harvestingCapability': harvestingCapability ?? this.harvestingCapability,
       'combatCapability': combatCapability ?? this.combatCapability,
+      'ownerID': ownerID ?? this.ownerID,
       'creationTurn': creationTurn ?? this.creationTurn,
       'hasBuiltSomething': hasBuiltSomething ?? this.hasBuiltSomething,
     };

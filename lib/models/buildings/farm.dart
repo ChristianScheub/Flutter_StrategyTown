@@ -13,6 +13,7 @@ class Farm extends Building {
     required this.foodPerTurn,
     int? maxHealth,
     int? currentHealth,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: BuildingType.farm,
@@ -20,9 +21,10 @@ class Farm extends Building {
           level: level,
           maxHealth: maxHealth,
           currentHealth: currentHealth,
+          ownerID: ownerID,
         );
 
-  factory Farm.create(Position position, {Map<ResourceType, int>? productionValues}) {
+  factory Farm.create(Position position, {Map<ResourceType, int>? productionValues, String ownerID = 'player'}) {
     final food = productionValues != null && productionValues.containsKey(ResourceType.food)
         ? productionValues[ResourceType.food]!
         : (baseProductionValues[BuildingType.farm]?[ResourceType.food] ?? 10);
@@ -30,6 +32,7 @@ class Farm extends Building {
       id: const Uuid().v4(),
       position: position,
       foodPerTurn: food,
+      ownerID: ownerID,
     );
   }
 
@@ -41,6 +44,7 @@ class Farm extends Building {
     int? level,
     int? maxHealth,
     int? currentHealth,
+    String? ownerID,
     int? foodPerTurn,
   }) {
     return Farm(
@@ -49,6 +53,7 @@ class Farm extends Building {
       level: level ?? this.level,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       foodPerTurn: foodPerTurn ?? this.foodPerTurn,
     );
   }

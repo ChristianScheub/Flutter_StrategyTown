@@ -15,6 +15,7 @@ class CityCenter extends Building implements UnitTrainer {
     required this.unitCosts,
     int? maxHealth,
     int? currentHealth,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: BuildingType.cityCenter,
@@ -22,9 +23,10 @@ class CityCenter extends Building implements UnitTrainer {
           level: level,
           maxHealth: maxHealth,
           currentHealth: currentHealth,
+          ownerID: ownerID,
         );
 
-  factory CityCenter.create(Position position) {
+  factory CityCenter.create(Position position, {required String ownerID}) {
     return CityCenter(
       id: const Uuid().v4(),
       position: position,
@@ -36,6 +38,7 @@ class CityCenter extends Building implements UnitTrainer {
         UnitType.commander: 70,
         UnitType.architect: 55,
       },
+      ownerID: '',
     );
   }
 
@@ -47,6 +50,7 @@ class CityCenter extends Building implements UnitTrainer {
     int? level,
     int? maxHealth,
     int? currentHealth,
+    String? ownerID,
     Map<UnitType, int>? unitCosts,
   }) {
     return CityCenter(
@@ -55,6 +59,7 @@ class CityCenter extends Building implements UnitTrainer {
       level: level ?? this.level,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       unitCosts: unitCosts ?? this.unitCosts,
     );
   }

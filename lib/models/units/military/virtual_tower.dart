@@ -16,6 +16,7 @@ class VirtualUnit extends MilitaryUnit {
     required CombatCapability combatCapability,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: UnitType.virtualTower,
@@ -37,6 +38,7 @@ class VirtualUnit extends MilitaryUnit {
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
     CombatCapability? combatCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   }) {
@@ -47,6 +49,7 @@ class VirtualUnit extends MilitaryUnit {
       actionsLeft: actionsLeft ?? this.actionsLeft,
       isSelected: isSelected ?? this.isSelected,
       combatCapability: (combatCapability ?? this.combatCapability) as CombatCapability,
+      ownerID: ownerID ?? this.ownerID,
       creationTurn: creationTurn ?? this.creationTurn,
       hasBuiltSomething: hasBuiltSomething ?? this.hasBuiltSomething,
     );

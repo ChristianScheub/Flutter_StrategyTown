@@ -139,28 +139,28 @@ class EnemyFaction extends Equatable {
     // Create the specific building type based on the type
     switch (buildingType) {
       case BuildingType.cityCenter:
-        return CityCenter.create(position)
+        return CityCenter.create(position, ownerID: "ai1")
             .copyWith(id: id, level: level);
       case BuildingType.farm:
-        return Farm.create(position)
+        return Farm.create(position, ownerID: "ai1")
             .copyWith(id: id, level: level);
       case BuildingType.mine:
-        return Mine.create(position)
+        return Mine.create(position, ownerID: "ai1")
             .copyWith(id: id, level: level);
       case BuildingType.lumberCamp:
-        return LumberCamp.create(position)
+        return LumberCamp.create(position, ownerID: "ai1")
             .copyWith(id: id, level: level);
       case BuildingType.warehouse:
-        return Warehouse.create(position)
+        return Warehouse.create(position, ownerID: "ai1")
             .copyWith(id: id, level: level);
       case BuildingType.barracks:
-        return Barracks.create(position)
+        return Barracks.create(position, ownerID: "ai1")
             .copyWith(id: id, level: level);
       case BuildingType.defensiveTower:
-        return DefensiveTower.create(position)
+        return DefensiveTower.create(position, ownerID: "ai1")
             .copyWith(id: id, level: level);
       case BuildingType.wall:
-        return Wall.create(position)
+        return Wall.create(position, ownerID: "ai1")
             .copyWith(id: id, level: level);
     }
   }

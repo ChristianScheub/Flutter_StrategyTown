@@ -13,6 +13,7 @@ class LumberCamp extends Building {
     required this.woodPerTurn,
     int? maxHealth,
     int? currentHealth,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: BuildingType.lumberCamp,
@@ -20,9 +21,10 @@ class LumberCamp extends Building {
           level: level,
           maxHealth: maxHealth,
           currentHealth: currentHealth,
+          ownerID: ownerID,
         );
 
-  factory LumberCamp.create(Position position, {Map<ResourceType, int>? productionValues}) {
+  factory LumberCamp.create(Position position, {Map<ResourceType, int>? productionValues, required String ownerID}) {
     final wood = productionValues != null && productionValues.containsKey(ResourceType.wood)
         ? productionValues[ResourceType.wood]!
         : (baseProductionValues[BuildingType.lumberCamp]?[ResourceType.wood] ?? 12);
@@ -41,6 +43,7 @@ class LumberCamp extends Building {
     int? level,
     int? maxHealth,
     int? currentHealth,
+    String? ownerID,
     int? woodPerTurn,
   }) {
     return LumberCamp(
@@ -49,6 +52,7 @@ class LumberCamp extends Building {
       level: level ?? this.level,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       woodPerTurn: woodPerTurn ?? this.woodPerTurn,
     );
   }

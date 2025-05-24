@@ -87,6 +87,7 @@ abstract class Building extends Equatable {
   final int level;
   final int maxHealth;
   final int currentHealth;
+  final String ownerID; // Owner of the building (player or AI identifier)
 
   Building({
     required this.id,
@@ -95,6 +96,7 @@ abstract class Building extends Equatable {
     this.level = 1,
     int? maxHealth,
     int? currentHealth,
+    this.ownerID = 'player', // Default owner is the player
   }) : 
     maxHealth = maxHealth ?? _getBaseHealth(type),
     currentHealth = currentHealth ?? maxHealth ?? _getBaseHealth(type);
@@ -122,6 +124,7 @@ abstract class Building extends Equatable {
     int? level,
     int? maxHealth,
     int? currentHealth,
+    String? ownerID,
   });
 
   /// Gibt die Produktionswerte des Gebäudes zurück (Standard: keine Produktion)
@@ -214,24 +217,24 @@ abstract class Building extends Equatable {
   }
 
   /// Factory method to create a building of a specific type
-  static Building create(BuildingType type, Position position, {Map<ResourceType, int>? productionValues}) {
+  static Building create(BuildingType type, Position position, {Map<ResourceType, int>? productionValues, String ownerID = 'player'}) {
     switch (type) {
       case BuildingType.cityCenter:
-        return CityCenter.create(position);
+        return CityCenter.create(position, ownerID: ownerID);
       case BuildingType.farm:
-        return Farm.create(position, productionValues: productionValues);
+        return Farm.create(position, productionValues: productionValues, ownerID: ownerID);
       case BuildingType.mine:
-        return Mine.create(position);
+        return Mine.create(position, ownerID: ownerID);
       case BuildingType.lumberCamp:
-        return LumberCamp.create(position);
+        return LumberCamp.create(position, ownerID: ownerID);
       case BuildingType.warehouse:
-        return Warehouse.create(position);
+        return Warehouse.create(position, ownerID: ownerID);
       case BuildingType.barracks:
-        return Barracks.create(position);
+        return Barracks.create(position, ownerID: ownerID);
       case BuildingType.defensiveTower:
-        return DefensiveTower.create(position);
+        return DefensiveTower.create(position, ownerID: ownerID);
       case BuildingType.wall:
-        return Wall.create(position);
+        return Wall.create(position, ownerID: ownerID);
     }
   }
 
@@ -256,11 +259,12 @@ abstract class Building extends Equatable {
       'type': type.toString().split('.').last,
       'position': position.toJson(),
       'level': level,
+      'ownerID': ownerID,
     };
   }
   
   // Each subclass will implement its specific fromJson factory
 
   @override
-  List<Object?> get props => [id, type, position, level, maxHealth, currentHealth];
+  List<Object?> get props => [id, type, position, level, maxHealth, currentHealth, ownerID];
 }

@@ -18,26 +18,26 @@ import 'package:flutter_sim_city/models/units/capabilities/combat_capability.dar
 /// Einheitentypen zu zentralisieren und zu vereinfachen.
 class UnitFactory {
   /// Erstellt eine neue Einheit des angegebenen Typs an der angegebenen Position
-  static Unit createUnit(UnitType type, Position position, {int currentTurn = 0}) {
+  static Unit createUnit(UnitType type, Position position, {int currentTurn = 0, String ownerID = 'player'}) {
     switch (type) {
       case UnitType.settler:
-        return Settler.create(position, creationTurn: currentTurn);
+        return Settler.create(position, creationTurn: currentTurn, ownerID: ownerID);
       case UnitType.farmer:
-        return Farmer.create(position, creationTurn: currentTurn);
+        return Farmer.create(position, creationTurn: currentTurn, ownerID: ownerID);
       case UnitType.lumberjack:
-        return Lumberjack.create(position, creationTurn: currentTurn);
+        return Lumberjack.create(position, creationTurn: currentTurn, ownerID: ownerID);
       case UnitType.miner:
-        return Miner.create(position, creationTurn: currentTurn);
+        return Miner.create(position, creationTurn: currentTurn, ownerID: ownerID);
       case UnitType.commander:
-        return Commander.create(position, creationTurn: currentTurn);
+        return Commander.create(position, creationTurn: currentTurn, ownerID: ownerID);
       case UnitType.knight:
-        return Knight.create(position, creationTurn: currentTurn);
+        return Knight.create(position, creationTurn: currentTurn, ownerID: ownerID);
       case UnitType.soldierTroop:
-        return SoldierTroop.create(position, creationTurn: currentTurn);
+        return SoldierTroop.create(position, creationTurn: currentTurn, ownerID: ownerID);
       case UnitType.archer:
-        return Archer.create(position, creationTurn: currentTurn);
+        return Archer.create(position, creationTurn: currentTurn, ownerID: ownerID);
       case UnitType.architect:
-        return Architect.create(position, creationTurn: currentTurn);
+        return Architect.create(position, creationTurn: currentTurn, ownerID: ownerID);
       case UnitType.virtualTower:
         // Virtual tower units should be created through DefensiveTower._createVirtualAttackUnit()
         throw UnsupportedError('Virtual tower units cannot be created directly through UnitFactory');

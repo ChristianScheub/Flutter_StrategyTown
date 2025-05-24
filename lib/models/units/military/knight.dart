@@ -16,6 +16,7 @@ class Knight extends MilitaryUnit {
     required CombatCapability combatCapability,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: UnitType.knight,
@@ -28,7 +29,7 @@ class Knight extends MilitaryUnit {
           hasBuiltSomething: hasBuiltSomething,
         );
 
-  factory Knight.create(Position position, {int creationTurn = 0}) {
+  factory Knight.create(Position position, {int creationTurn = 0, required String ownerID}) {
     return Knight(
       id: const Uuid().v4(),
       position: position,
@@ -50,6 +51,7 @@ class Knight extends MilitaryUnit {
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
     CombatCapability? combatCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   }) {
@@ -59,6 +61,7 @@ class Knight extends MilitaryUnit {
       actionsLeft: actionsLeft ?? this.actionsLeft,
       isSelected: isSelected ?? this.isSelected,
       combatCapability: (combatCapability ?? this.combatCapability) as CombatCapability,
+      ownerID: ownerID ?? this.ownerID,
       creationTurn: creationTurn ?? this.creationTurn,
       hasBuiltSomething: hasBuiltSomething ?? this.hasBuiltSomething,
     );

@@ -17,13 +17,14 @@ import 'package:flutter_sim_city/models/map/tile_map.dart';
 import 'package:flutter_sim_city/models/units/unit.dart';
 import 'package:flutter_sim_city/models/units/unit_factory.dart';
 import 'package:flutter_sim_city/models/units/civilian/settler.dart';
+import 'package:flutter_sim_city/models/game/player_manager.dart';
 
 /// Main state class for the game, following equatable pattern
 class GameState extends Equatable {
   final TileMap map;
   final List<Unit> units;
   final List<Building> buildings;
-  final ResourcesCollection resources;
+  final ResourcesCollection resources; // Legacy: kept for main player resources
   final Position cameraPosition;
   final int turn;
   final String? selectedUnitId;
@@ -31,9 +32,8 @@ class GameState extends Equatable {
   final Position? selectedTilePosition;
   final BuildingType? buildingToBuild;
   final UnitType? unitToTrain;
-  final EnemyFaction? enemyFaction; // Feindliche Fraktion
-  final int playerPoints;
-  final int aiPoints;
+  final EnemyFaction? enemyFaction;
+  final PlayerManager playerManager;
 
   const GameState({
     required this.map,
@@ -48,8 +48,7 @@ class GameState extends Equatable {
     this.buildingToBuild,
     this.unitToTrain,
     this.enemyFaction,
-    this.playerPoints = 0,
-    this.aiPoints = 0,
+    required this.playerManager,
   });
 
   factory GameState.initial() {
@@ -58,15 +57,14 @@ class GameState extends Equatable {
     return GameState(
       map: map,
       units: [
-        Settler.create(initialPosition),
+        Settler.create(initialPosition, ownerID: 'player'),
       ],
       buildings: [],
       resources: ResourcesCollection.initial(),
       cameraPosition: initialPosition,
       turn: 1,
-      enemyFaction: null, // Will be created by AIService on first turn
-      playerPoints: 0,
-      aiPoints: 0,
+      enemyFaction: null,
+      playerManager: PlayerManager.withDefaultPlayer(),
     );
   }
 
@@ -83,8 +81,7 @@ class GameState extends Equatable {
     BuildingType? buildingToBuild,
     UnitType? unitToTrain,
     EnemyFaction? enemyFaction,
-    int? playerPoints,
-    int? aiPoints,
+    PlayerManager? playerManager,
   }) {
     return GameState(
       map: map ?? this.map,
@@ -99,8 +96,7 @@ class GameState extends Equatable {
       buildingToBuild: buildingToBuild,
       unitToTrain: unitToTrain,
       enemyFaction: enemyFaction ?? this.enemyFaction,
-      playerPoints: playerPoints ?? this.playerPoints,
-      aiPoints: aiPoints ?? this.aiPoints,
+      playerManager: playerManager ?? this.playerManager,
     );
   }
 
@@ -117,6 +113,28 @@ class GameState extends Equatable {
     
     return buildingsAtPosition.isNotEmpty ? buildingsAtPosition.first : null;
   }
+
+  // Get units by ownerID
+  List<Unit> getUnitsByOwner(String ownerID) {
+    return units.where((unit) => unit.ownerID == ownerID).toList();
+  }
+
+  // Get buildings by ownerID
+  List<Building> getBuildingsByOwner(String ownerID) {
+    return buildings.where((building) => building.ownerID == ownerID).toList();
+  }
+
+  // Player management methods using PlayerManager
+  List<String> getAllPlayerIDs() => playerManager.playerIds;
+  bool hasPlayer(String playerID) => playerManager.hasPlayer(playerID);
+  bool isAIPlayer(String playerID) => playerManager.isAIPlayer(playerID);
+  bool isHumanPlayer(String playerID) => playerManager.isHumanPlayer(playerID);
+  List<String> getHumanPlayers() => playerManager.humanPlayers.map((p) => p.id).toList();
+  List<String> getAIPlayers() => playerManager.aiPlayers.map((p) => p.id).toList();
+  int get playerCount => playerManager.playerCount;
+  int get humanPlayerCount => playerManager.humanPlayerCount;
+  int get aiPlayerCount => playerManager.aiPlayerCount;
+  bool get isMultiplayer => playerManager.isMultiplayer;
 
   // Get selected unit
   Unit? get selectedUnit {
@@ -217,13 +235,36 @@ class GameState extends Equatable {
     var newResources = resources;
     
     for (final building in buildings) {
-      if (building is Farm) {
-        newResources = newResources.add(ResourceType.food, building.foodPerTurn);
-      } else if (building is Mine) {
-        newResources = newResources.add(ResourceType.stone, building.stonePerTurn);
-        newResources = newResources.add(ResourceType.iron, building.ironPerTurn);
-      } else if (building is LumberCamp) {
-        newResources = newResources.add(ResourceType.wood, building.woodPerTurn);
+      // Only collect resources from player-owned buildings
+      if (building.ownerID == 'player') {
+        if (building is Farm) {
+          newResources = newResources.add(ResourceType.food, building.foodPerTurn);
+        } else if (building is Mine) {
+          newResources = newResources.add(ResourceType.stone, building.stonePerTurn);
+          newResources = newResources.add(ResourceType.iron, building.ironPerTurn);
+        } else if (building is LumberCamp) {
+          newResources = newResources.add(ResourceType.wood, building.woodPerTurn);
+        }
+      }
+    }
+    
+    return newResources;
+  }
+
+  // Collect resources for a specific player
+  ResourcesCollection collectResourcesForPlayer(String playerID, ResourcesCollection currentResources) {
+    var newResources = currentResources;
+    
+    for (final building in buildings) {
+      if (building.ownerID == playerID) {
+        if (building is Farm) {
+          newResources = newResources.add(ResourceType.food, building.foodPerTurn);
+        } else if (building is Mine) {
+          newResources = newResources.add(ResourceType.stone, building.stonePerTurn);
+          newResources = newResources.add(ResourceType.iron, building.ironPerTurn);
+        } else if (building is LumberCamp) {
+          newResources = newResources.add(ResourceType.wood, building.woodPerTurn);
+        }
       }
     }
     
@@ -236,30 +277,150 @@ class GameState extends Equatable {
   }
 
   // Helper to create the right building type
-  Building createBuilding(BuildingType type, Position position) {
+  Building createBuilding(BuildingType type, Position position, {String ownerID = 'player'}) {
     switch (type) {
       case BuildingType.cityCenter:
-        return CityCenter.create(position);
+        return CityCenter.create(position, ownerID: ownerID);
       case BuildingType.farm:
-        return Farm.create(position);
+        return Farm.create(position, ownerID: ownerID);
       case BuildingType.mine:
-        return Mine.create(position);
+        return Mine.create(position, ownerID: ownerID);
       case BuildingType.lumberCamp:
-        return LumberCamp.create(position);
+        return LumberCamp.create(position, ownerID: ownerID);
       case BuildingType.warehouse:
-        return Warehouse.create(position);
+        return Warehouse.create(position, ownerID: ownerID);
       case BuildingType.barracks:
-        return Barracks.create(position);
+        return Barracks.create(position, ownerID: ownerID);
       case BuildingType.defensiveTower:
-        return DefensiveTower.create(position);
+        return DefensiveTower.create(position, ownerID: ownerID);
       case BuildingType.wall:
-        return Wall.create(position);
+        return Wall.create(position, ownerID: ownerID);
     }
   }
 
   // Helper to create the right unit type using the UnitFactory
-  Unit createUnit(UnitType type, Position position) {
-    return UnitFactory.createUnit(type, position);
+  Unit createUnit(UnitType type, Position position, {String ownerID = 'player'}) {
+    return UnitFactory.createUnit(type, position, ownerID: ownerID);
+  }
+
+  // Player management methods that modify state
+  GameState addPlayer(String playerID, String playerName) {
+    try {
+      final updatedPlayerManager = playerManager.addHumanPlayer(
+        id: playerID,
+        name: playerName,
+      );
+      return copyWith(playerManager: updatedPlayerManager);
+    } catch (e) {
+      return this; // Player already exists
+    }
+  }
+  
+  GameState removePlayer(String playerID) {
+    final updatedPlayerManager = playerManager.removePlayer(playerID);
+    
+    // Remove all units and buildings owned by this player
+    final remainingUnits = units.where((unit) => unit.ownerID != playerID).toList();
+    final remainingBuildings = buildings.where((building) => building.ownerID != playerID).toList();
+    
+    return copyWith(
+      playerManager: updatedPlayerManager,
+      units: remainingUnits,
+      buildings: remainingBuildings,
+    );
+  }
+  
+  GameState addAIPlayer(String aiID, String aiName) {
+    try {
+      final updatedPlayerManager = playerManager.addAIPlayer(
+        id: aiID,
+        name: aiName,
+      );
+      return copyWith(playerManager: updatedPlayerManager);
+    } catch (e) {
+      return this; // Player already exists
+    }
+  }
+
+  GameState addMultipleAIPlayers(int count, {String namePrefix = 'AI Player'}) {
+    final updatedPlayerManager = playerManager.addMultipleAIPlayers(count, namePrefix: namePrefix);
+    return copyWith(playerManager: updatedPlayerManager);
+  }
+  
+  // Get resources for a specific player
+  ResourcesCollection getPlayerResources(String playerID) {
+    final player = playerManager.getPlayer(playerID);
+    return player?.resources ?? ResourcesCollection.initial();
+  }
+  
+  // Update player resources
+  GameState updatePlayerResources(String playerID, ResourcesCollection newResources) {
+    try {
+      final updatedPlayerManager = playerManager.updatePlayerResources(playerID, newResources);
+      
+      // Also update legacy resources if it's the main player
+      final updatedLegacyResources = playerID == 'player' ? newResources : resources;
+      
+      return copyWith(
+        playerManager: updatedPlayerManager,
+        resources: updatedLegacyResources,
+      );
+    } catch (e) {
+      return this; // Player not found
+    }
+  }
+  
+  // Check if player owns any units
+  bool playerHasUnits(String playerID) {
+    return units.any((unit) => unit.ownerID == playerID);
+  }
+  
+  // Check if player owns any buildings
+  bool playerHasBuildings(String playerID) {
+    return buildings.any((building) => building.ownerID == playerID);
+  }
+  
+  // Check if player is still active (has units or buildings)
+  bool isPlayerActive(String playerID) {
+    return playerHasUnits(playerID) || playerHasBuildings(playerID);
+  }
+  
+  // Get all active players (those with units or buildings)
+  List<String> getActivePlayers() {
+    return playerManager.playerIds.where((playerID) => isPlayerActive(playerID)).toList();
+  }
+  
+  // Remove inactive players (no units or buildings)
+  GameState removeInactivePlayers() {
+    final inactivePlayers = playerManager.playerIds
+        .where((playerID) => !isPlayerActive(playerID))
+        .toList();
+    
+    GameState newState = this;
+    for (final playerID in inactivePlayers) {
+      newState = newState.removePlayer(playerID);
+    }
+    
+    return newState;
+  }
+  
+  // Get player statistics
+  Map<String, Map<String, dynamic>> getPlayerStatistics() {
+    final baseStats = playerManager.getPlayerStatistics();
+    
+    // Add game-specific statistics
+    for (final playerID in playerManager.playerIds) {
+      baseStats[playerID] = {
+        ...baseStats[playerID]!,
+        'units': getUnitsByOwner(playerID).length,
+        'buildings': getBuildingsByOwner(playerID).length,
+        'settlements': getBuildingsByOwner(playerID)
+            .where((building) => building.type == BuildingType.cityCenter)
+            .length,
+      };
+    }
+    
+    return baseStats;
   }
 
   // Serialization methods
@@ -272,8 +433,7 @@ class GameState extends Equatable {
       'cameraPosition': cameraPosition.toJson(),
       'turn': turn,
       'enemyFaction': enemyFaction?.toJson(),
-      'playerPoints': playerPoints,
-      'aiPoints': aiPoints,
+      'playerManager': playerManager.toJson(),
     };
   }
   
@@ -290,9 +450,10 @@ class GameState extends Equatable {
       resources: ResourcesCollection.fromJson(json['resources']),
       cameraPosition: Position.fromJson(json['cameraPosition']),
       turn: json['turn'],
-      enemyFaction: EnemyFaction.fromJson(json['enemyFaction']),
-      playerPoints: json['playerPoints'] ?? 0,
-      aiPoints: json['aiPoints'] ?? 0,
+      enemyFaction: json['enemyFaction'] != null ? EnemyFaction.fromJson(json['enemyFaction']) : null,
+      playerManager: json['playerManager'] != null 
+          ? PlayerManager.fromJson(json['playerManager'])
+          : PlayerManager.withDefaultPlayer(),
     );
   }
 
@@ -315,32 +476,33 @@ class GameState extends Equatable {
     final position = Position.fromJson(json['position']);
     final id = json['id'];
     final level = json['level'] ?? 1;
+    final ownerID = json['ownerID'] ?? 'player'; // Fallback für alte Speicherstände
     
     // Create the specific building type based on the type
     switch (buildingType) {
       case BuildingType.cityCenter:
-        return CityCenter.create(position)
+        return CityCenter.create(position, ownerID: ownerID)
             .copyWith(id: id, level: level);
       case BuildingType.farm:
-        return Farm.create(position)
+        return Farm.create(position, ownerID: ownerID)
             .copyWith(id: id, level: level);
       case BuildingType.mine:
-        return Mine.create(position)
+        return Mine.create(position, ownerID: ownerID)
             .copyWith(id: id, level: level);
       case BuildingType.lumberCamp:
-        return LumberCamp.create(position)
+        return LumberCamp.create(position, ownerID: ownerID)
             .copyWith(id: id, level: level);
       case BuildingType.warehouse:
-        return Warehouse.create(position)
+        return Warehouse.create(position, ownerID: ownerID)
             .copyWith(id: id, level: level);
       case BuildingType.barracks:
-        return Barracks.create(position)
+        return Barracks.create(position, ownerID: ownerID)
             .copyWith(id: id, level: level);
       case BuildingType.defensiveTower:
-        return DefensiveTower.create(position)
+        return DefensiveTower.create(position, ownerID: ownerID)
             .copyWith(id: id, level: level);
       case BuildingType.wall:
-        return Wall.create(position)
+        return Wall.create(position, ownerID: ownerID)
             .copyWith(id: id, level: level);
     }
   }
@@ -359,7 +521,6 @@ class GameState extends Equatable {
     buildingToBuild,
     unitToTrain,
     enemyFaction,
-    playerPoints,
-    aiPoints,
+    playerManager,
   ];
 }

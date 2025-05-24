@@ -11,6 +11,7 @@ import 'package:flutter_sim_city/models/resource/resource.dart';
 import 'package:flutter_sim_city/models/units/unit.dart';
 import 'package:flutter_sim_city/models/units/unit_abilities.dart';
 import 'package:flutter_sim_city/services/ai/strategies/ai_expand_strategy.dart';
+import 'package:flutter_sim_city/services/score_service.dart';
 
 /// Strategie für den Bau neuer Gebäude
 class AIBuildStrategy {
@@ -117,16 +118,16 @@ class AIBuildStrategy {
       
       switch (buildingType) {
         case BuildingType.farm:
-          newBuilding = Farm.create(buildPosition);
+          newBuilding = Farm.create(buildPosition, ownerID: "ai1");
           break;
         case BuildingType.barracks:
-          newBuilding = Barracks.create(buildPosition);
+          newBuilding = Barracks.create(buildPosition, ownerID: "ai1");
           break;
         case BuildingType.lumberCamp:
-          newBuilding = LumberCamp.create(buildPosition);
+          newBuilding = LumberCamp.create(buildPosition, ownerID: "ai1");
           break;
         case BuildingType.mine:
-          newBuilding = Mine.create(buildPosition);
+          newBuilding = Mine.create(buildPosition, ownerID: "ai1");
           break;
         default:
           continue; // Unbekannter Gebäudetyp, nächsten probieren
@@ -160,7 +161,9 @@ class AIBuildStrategy {
       
       print("KI hat ${newBuilding.displayName} an Position (${buildPosition.x}, ${buildPosition.y}) gebaut");
       
-      return state.copyWith(enemyFaction: updatedFaction);
+      // Update GameState with new faction and add building upgrade points
+      final newState = state.copyWith(enemyFaction: updatedFaction);
+      return ScoreService.addBuildingUpgradePoints(newState, newBuilding, "ai1");
     }
     
     // Wenn kein Gebäude gebaut werden konnte, Einheiten bewegen

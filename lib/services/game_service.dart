@@ -554,7 +554,7 @@ class GameStateNotifier extends StateNotifier<GameState> {
     if (!state.resources.hasEnoughMultiple(buildingCost)) return;
     
     // Create the lumber camp
-    final newBuilding = LumberCamp.create(selectedUnit.position);
+    final newBuilding = LumberCamp.create(selectedUnit.position, ownerID: "player");
     
     // Update resources
     final newResources = state.resources.subtractMultiple(buildingCost);
@@ -604,7 +604,7 @@ class GameStateNotifier extends StateNotifier<GameState> {
     final isIronMine = tile.resourceType == ResourceType.iron;
     
     // Create the mine according to resource type
-    final newBuilding = Mine.create(selectedUnit.position, isIronMine: isIronMine);
+    final newBuilding = Mine.create(selectedUnit.position, isIronMine: isIronMine, ownerID: "player");
     
     // Update resources
     final newResources = state.resources.subtractMultiple(buildingCost);
@@ -651,7 +651,7 @@ class GameStateNotifier extends StateNotifier<GameState> {
     if (!state.resources.hasEnoughMultiple(buildingCost)) return;
     
     // Create the barracks
-    final newBuilding = Barracks.create(selectedUnit.position);
+    final newBuilding = Barracks.create(selectedUnit.position, ownerID: "player");
     
     // Update resources
     final newResources = state.resources.subtractMultiple(buildingCost);
@@ -704,7 +704,7 @@ class GameStateNotifier extends StateNotifier<GameState> {
     if (!state.resources.hasEnoughMultiple(buildingCost)) return;
     
     // Create the defensive tower
-    final newBuilding = DefensiveTower.create(architect.position);
+    final newBuilding = DefensiveTower.create(architect.position,ownerID: "player");
     
     // Update resources
     final newResources = state.resources.subtractMultiple(buildingCost);
@@ -753,7 +753,7 @@ class GameStateNotifier extends StateNotifier<GameState> {
     if (!state.resources.hasEnoughMultiple(buildingCost)) return;
     
     // Create the wall
-    final newBuilding = Wall.create(architect.position);
+    final newBuilding = Wall.create(architect.position, ownerID: "player");
     
     // Update resources
     final newResources = state.resources.subtractMultiple(buildingCost);

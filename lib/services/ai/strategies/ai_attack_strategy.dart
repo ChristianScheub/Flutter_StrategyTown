@@ -64,7 +64,7 @@ class AIAttackStrategy {
           
           print("Enemy ${unit.type} attacked and defeated player ${target.type}!");
           attacksMade++;
-          state = ScoreService.handleUnitKill(state, target, false);
+          state = ScoreService.handleUnitKill(state, target, "ai1");
         }
       }
     }
@@ -175,7 +175,7 @@ class AIAttackStrategy {
           attacksMade++;
           // Verwende den ScoreService für die Punkteberechnung
           if (targetBuilding.type != BuildingType.defensiveTower && targetBuilding.type != BuildingType.wall) {
-            state = ScoreService.handleBuildingCapture(state, targetBuilding, false);
+            state = ScoreService.handleBuildingCapture(state, targetBuilding, "ai1");
           }
         }
       }

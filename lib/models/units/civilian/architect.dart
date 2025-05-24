@@ -23,6 +23,7 @@ class Architect extends CivilianUnit implements BuilderUnit {
     int creationTurn = 0,
     bool hasBuiltSomething = false,
     this.buildingCapability,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: UnitType.architect,
@@ -37,7 +38,7 @@ class Architect extends CivilianUnit implements BuilderUnit {
           buildingCapability: buildingCapability,
         );
 
-  factory Architect.create(Position position, {int creationTurn = 0}) {
+  factory Architect.create(Position position, {int creationTurn = 0, required String ownerID}) {
     return Architect(
       id: const Uuid().v4(),
       position: position,
@@ -82,8 +83,9 @@ class Architect extends CivilianUnit implements BuilderUnit {
     int? actionsLeft,
     bool? isSelected,
     BuildingCapability? buildingCapability,
-    CombatCapability? combatCapability, // für Signatur-Kompatibilität
+    CombatCapability? combatCapability,
     HarvestingCapability? harvestingCapability,
+    String? ownerID,
     int? maxHealth,
     int? currentHealth,
     int? creationTurn,
@@ -97,11 +99,13 @@ class Architect extends CivilianUnit implements BuilderUnit {
       buildingCapability: buildingCapability ?? this.buildingCapability,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       creationTurn: creationTurn ?? this.creationTurn,
       hasBuiltSomething: hasBuiltSomething ?? this.hasBuiltSomething,
     );
   }
 
+  @override
   Architect copyWithBase({
     String? id,
     Position? position,
@@ -110,7 +114,8 @@ class Architect extends CivilianUnit implements BuilderUnit {
     int? maxHealth,
     int? currentHealth,
     BuildingCapability? buildingCapability,
-    HarvestingCapability? harvestingCapability, // für Signatur-Kompatibilität
+    HarvestingCapability? harvestingCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   }) {
@@ -122,6 +127,7 @@ class Architect extends CivilianUnit implements BuilderUnit {
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
       buildingCapability: buildingCapability ?? this.buildingCapability,
+      ownerID: ownerID ?? this.ownerID,
       creationTurn: creationTurn ?? this.creationTurn,
       hasBuiltSomething: hasBuiltSomething ?? this.hasBuiltSomething,
     );

@@ -14,14 +14,16 @@ class Wall extends Building {
     required int level,
     this.currentHealth = baseHealth,
     this.maxHealth = baseHealth,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: BuildingType.wall,
           position: position,
           level: level,
+          ownerID: ownerID,
         );
 
-  factory Wall.create(Position position) {
+  factory Wall.create(Position position, {required String ownerID}) {
     return Wall(
       id: const Uuid().v4(),
       position: position,
@@ -46,6 +48,7 @@ class Wall extends Building {
     int? level,
     int? currentHealth,
     int? maxHealth,
+    String? ownerID,
   }) {
     return Wall(
       id: id ?? this.id,
@@ -53,6 +56,7 @@ class Wall extends Building {
       level: level ?? this.level,
       currentHealth: currentHealth ?? this.currentHealth,
       maxHealth: maxHealth ?? this.maxHealth,
+      ownerID: ownerID ?? this.ownerID,
     );
   }
 

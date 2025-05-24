@@ -21,6 +21,7 @@ class Settler extends CivilianUnit implements SettlerCapable {
     this.canFoundCityNow = true,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
+    String ownerID = 'player',
   }) : super(
           id: id,
           type: UnitType.settler,
@@ -32,13 +33,15 @@ class Settler extends CivilianUnit implements SettlerCapable {
           currentHealth: currentHealth,
           creationTurn: creationTurn,
           hasBuiltSomething: hasBuiltSomething,
+          ownerID: ownerID,
         );
 
-  factory Settler.create(Position position, {int creationTurn = 0}) {
+  factory Settler.create(Position position, {int creationTurn = 0, String ownerID = 'player'}) {
     return Settler(
       id: const Uuid().v4(),
       position: position,
       creationTurn: creationTurn,
+      ownerID: ownerID,
     );
   }
 
@@ -56,6 +59,7 @@ class Settler extends CivilianUnit implements SettlerCapable {
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
     CombatCapability? combatCapability, // für Signatur-Kompatibilität
+    String? ownerID,
     int? maxHealth,
     int? currentHealth,
     bool? canFoundCityNow,
@@ -70,6 +74,7 @@ class Settler extends CivilianUnit implements SettlerCapable {
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
       canFoundCityNow: canFoundCityNow ?? this.canFoundCityNow,
+      ownerID: ownerID ?? this.ownerID,
       creationTurn: creationTurn ?? this.creationTurn,
       hasBuiltSomething: hasBuiltSomething ?? this.hasBuiltSomething,
     );
@@ -85,6 +90,7 @@ class Settler extends CivilianUnit implements SettlerCapable {
     int? currentHealth,
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   }) {
@@ -95,6 +101,7 @@ class Settler extends CivilianUnit implements SettlerCapable {
       isSelected: isSelected ?? this.isSelected,
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
+      ownerID: ownerID ?? this.ownerID,
       canFoundCityNow: canFoundCityNow,
       creationTurn: creationTurn ?? this.creationTurn,
       hasBuiltSomething: hasBuiltSomething ?? this.hasBuiltSomething,

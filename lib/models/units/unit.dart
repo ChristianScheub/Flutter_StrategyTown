@@ -31,6 +31,9 @@ abstract class Unit extends Equatable {
   final HarvestingCapability? harvestingCapability;
   final BuildingCapability? buildingCapability;
   
+  // Owner information - used to identify which player or AI controls this unit
+  final String ownerID;
+  
   // Tracking when unit was created (for AI builder logic)
   final int creationTurn;
   final bool hasBuiltSomething;
@@ -51,6 +54,7 @@ abstract class Unit extends Equatable {
     this.combatCapability,
     this.harvestingCapability,
     this.buildingCapability,
+    this.ownerID = 'player', // Default owner is the player
     this.creationTurn = 0,
     this.hasBuiltSomething = false,
   });
@@ -65,6 +69,7 @@ abstract class Unit extends Equatable {
     CombatCapability? combatCapability,
     HarvestingCapability? harvestingCapability,
     BuildingCapability? buildingCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   });
@@ -78,6 +83,7 @@ abstract class Unit extends Equatable {
     CombatCapability? combatCapability,
     HarvestingCapability? harvestingCapability,
     BuildingCapability? buildingCapability,
+    String? ownerID,
     int? creationTurn,
     bool? hasBuiltSomething,
   }) {
@@ -89,6 +95,7 @@ abstract class Unit extends Equatable {
       'combatCapability': combatCapability ?? this.combatCapability,
       'harvestingCapability': harvestingCapability ?? this.harvestingCapability,
       'buildingCapability': buildingCapability ?? this.buildingCapability,
+      'ownerID': ownerID ?? this.ownerID,
       'creationTurn': creationTurn ?? this.creationTurn,
       'hasBuiltSomething': hasBuiltSomething ?? this.hasBuiltSomething,
     };
@@ -140,6 +147,7 @@ abstract class Unit extends Equatable {
         maxHealth,
         currentHealth,
         isCombatUnit,
+        ownerID,
         creationTurn,
         hasBuiltSomething,
       ];
@@ -183,6 +191,7 @@ abstract class Unit extends Equatable {
       'maxHealth': maxHealth,
       'currentHealth': currentHealth,
       'isCombatUnit': isCombatUnit,
+      'ownerID': ownerID,
     };
   }
   
@@ -199,6 +208,7 @@ abstract class Unit extends Equatable {
       'maxHealth': json['maxHealth'],
       'currentHealth': json['currentHealth'],
       'isCombatUnit': json['isCombatUnit'],
+      'ownerID': json['ownerID'] ?? 'player', // Default to player if not specified
     };
   }
 }

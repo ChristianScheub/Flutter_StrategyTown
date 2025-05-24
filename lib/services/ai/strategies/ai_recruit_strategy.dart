@@ -113,8 +113,13 @@ class AIRecruitStrategy {
       return state.copyWith(enemyFaction: faction);
     }
     
-    // 5. Erstelle die neue Einheit mit aktuellem Rundenzähler
-    final newUnit = UnitFactory.createUnit(unitToTrain, trainingBuilding.position, currentTurn: state.turn);
+    // 5. Erstelle die neue Einheit mit aktuellem Rundenzähler und AI player ID
+    final newUnit = UnitFactory.createUnit(
+      unitToTrain, 
+      trainingBuilding.position, 
+      ownerID: "ai1",
+      currentTurn: state.turn
+    );
     
     // 6. Aktualisiere Ressourcen
     final newResources = faction.resources.subtract(ResourceType.food, foodCost);
@@ -129,10 +134,10 @@ class AIRecruitStrategy {
     // Debug-Ausgabe
     print("KI hat ${newUnit.type} an Position (${trainingBuilding.position.x}, ${trainingBuilding.position.y}) rekrutiert");
     
-    // Aktualisiere den Spielzustand mit der neuen Fraktion und den Punkten
+    // Aktualisiere den Spielzustand mit der neuen Fraktion und den Punkten für AI player
     return ScoreService.addUnitTrainingPoints(
       state.copyWith(enemyFaction: updatedFaction),
-      false
+      "ai1"
     );
   }
 }
