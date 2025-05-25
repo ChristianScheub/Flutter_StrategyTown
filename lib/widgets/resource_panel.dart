@@ -4,10 +4,14 @@ import 'package:flutter_sim_city/models/resource/resources_collection.dart';
 
 class ResourcePanel extends StatelessWidget {
   final ResourcesCollection resources;
+  final String? playerName;
+  final String? playerId;
 
   const ResourcePanel({
     super.key,
     required this.resources,
+    this.playerName,
+    this.playerId,
   });
 
   @override
@@ -24,14 +28,34 @@ class ResourcePanel extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: ResourceType.values.map((type) {
-          return ResourceDisplay(
-            type: type,
-            amount: resources.getAmount(type),
-          );
-        }).toList(),
+      child: Column(
+        children: [
+          // Player info header (if available)
+          if (playerName != null || playerId != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                playerName != null ? '$playerName\'s Resources' : 'Player $playerId Resources',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          
+          // Resources row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: ResourceType.values.map((type) {
+              return ResourceDisplay(
+                type: type,
+                amount: resources.getAmount(type),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

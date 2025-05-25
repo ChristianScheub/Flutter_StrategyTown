@@ -40,34 +40,35 @@ class ResourceService extends BaseGameService {
       return u.id == unit.id ? u.copyWith(actionsLeft: u.actionsLeft - actionCost) : u;
     }).toList();
     
-    // Update resources
-    final newResources = state.resources.add(resourceType, actualHarvest);
+    // Update the owning player's resources instead of global resources
+    final currentPlayerResources = state.getPlayerResources(unit.ownerID);
+    final newPlayerResources = currentPlayerResources.add(resourceType, actualHarvest);
+    final updatedState = state.updatePlayerResources(unit.ownerID, newPlayerResources);
     
-    print('Ernte: $actualHarvest ${resourceType.toString().split('.').last}');
+    print('Ernte: $actualHarvest ${resourceType.toString().split('.').last} für Spieler ${unit.ownerID}');
     
-    updateState(state.copyWith(
+    updateState(updatedState.copyWith(
       units: newUnits,
-      resources: newResources,
     ));
-  }
-
-  void upgradeBuilding() {
+  }  void upgradeBuilding() {
     final building = selectedBuilding;
     if (building == null) return;
-    
+
     final upgradeCost = building.getUpgradeCost();
-    if (!hasEnoughResources(upgradeCost)) return;
-    
+    final currentPlayerResources = state.getPlayerResources(state.currentPlayerId);
+    if (!currentPlayerResources.hasEnoughMultiple(upgradeCost)) return;
+
     final updatedBuildings = state.buildings.map((b) {
       return b.id == building.id ? b.upgrade() : b;
     }).toList();
-    
-    final newState = subtractResources(state, upgradeCost);
-    
+
+    final newPlayerResources = currentPlayerResources.subtractMultiple(upgradeCost);
+    final updatedState = state.updatePlayerResources(state.currentPlayerId, newPlayerResources);
+
     updateState(ScoreService.addBuildingUpgradePoints(
-      newState.copyWith(buildings: updatedBuildings),
+      updatedState.copyWith(buildings: updatedBuildings),
       building,
-      "player"
+      state.currentPlayerId
     ));
   }
 
@@ -79,16 +80,18 @@ class ResourceService extends BaseGameService {
     if (wall.currentHealth >= wall.maxHealth) return;
     
     final repairCost = wall.getRepairCost();
-    if (!hasEnoughResources(repairCost)) return;
+    final currentPlayerResources = state.getPlayerResources(state.currentPlayerId);
+    if (!currentPlayerResources.hasEnoughMultiple(repairCost)) return;
     
     final updatedBuildings = state.buildings.map((b) {
       return b.id == wall.id ? wall.repair() : b;
     }).toList();
     
-    final newState = subtractResources(state, repairCost);
+    final newPlayerResources = currentPlayerResources.subtractMultiple(repairCost);
+    final updatedState = state.updatePlayerResources(state.currentPlayerId, newPlayerResources);
     
     print("Wall repaired to full health!");
     
-    updateState(newState.copyWith(buildings: updatedBuildings));
+    updateState(updatedState.copyWith(buildings: updatedBuildings));
   }
 }

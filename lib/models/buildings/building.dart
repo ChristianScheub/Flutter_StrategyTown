@@ -96,7 +96,7 @@ abstract class Building extends Equatable {
     this.level = 1,
     int? maxHealth,
     int? currentHealth,
-    this.ownerID = 'player', // Default owner is the player
+    required this.ownerID,
   }) : 
     maxHealth = maxHealth ?? _getBaseHealth(type),
     currentHealth = currentHealth ?? maxHealth ?? _getBaseHealth(type);
@@ -217,7 +217,7 @@ abstract class Building extends Equatable {
   }
 
   /// Factory method to create a building of a specific type
-  static Building create(BuildingType type, Position position, {Map<ResourceType, int>? productionValues, String ownerID = 'player'}) {
+  static Building create(BuildingType type, Position position, {Map<ResourceType, int>? productionValues, required String ownerID}) {
     switch (type) {
       case BuildingType.cityCenter:
         return CityCenter.create(position, ownerID: ownerID);

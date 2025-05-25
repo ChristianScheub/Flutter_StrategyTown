@@ -25,7 +25,7 @@ class Farmer extends CivilianUnit implements BuilderUnit, HarvesterUnit {
     int? currentHealth,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
-    String ownerID = 'player',
+    required String ownerID,
     this.buildingCapability,
     this.harvestingCapability,
   }) : super(
@@ -44,12 +44,12 @@ class Farmer extends CivilianUnit implements BuilderUnit, HarvesterUnit {
           harvestingCapability: harvestingCapability,
         );
 
-  factory Farmer.create(Position position, {int creationTurn = 0, String? ownerID}) {
+  factory Farmer.create(Position position, {int creationTurn = 0, required String ownerID}) {
     return Farmer(
       id: const Uuid().v4(),
       position: position,
       creationTurn: creationTurn,
-      ownerID: ownerID ?? 'player', // Fallback nur wenn null übergeben wird
+      ownerID: ownerID,
       buildingCapability: BuildingCapability(
         buildableTypes: [BuildingType.farm],
         actionCosts: {BuildingType.farm: 2},

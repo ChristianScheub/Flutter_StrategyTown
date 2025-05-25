@@ -35,14 +35,42 @@ class GameController {
   /// Aktuelle Rundenanzahl
   int get currentTurn => currentGameState.turn;
   
-  /// Aktuelle Ressourcen des Spielers
-  Map<String, int> get playerResources => _gameStateService.getPlayerResources();
+  // === ADDED: Mehrspielerzugriff ===
   
-  /// Alle Einheiten des Spielers
-  List<Unit> get playerUnits => _gameStateService.getPlayerUnits();
+  /// Aktueller Spieler ID
+  String get currentPlayerId => _gameStateService.currentPlayerId;
   
-  /// Alle Gebäude des Spielers
-  List<Building> get playerBuildings => _gameStateService.getPlayerBuildings();
+  /// Prüft ob der aktuelle Spieler ein Mensch ist
+  bool get isCurrentPlayerHuman => _gameStateService.isCurrentPlayerHuman;
+  
+  /// Prüft ob der aktuelle Spieler KI ist
+  bool get isCurrentPlayerAI => _gameStateService.isCurrentPlayerAI;
+  
+  /// Wechselt zum nächsten Spieler
+  void switchToNextPlayer() => _gameStateService.switchToNextPlayer();
+  
+  /// Wechselt zu einem bestimmten Spieler
+  void switchToPlayer(String playerId) => _gameStateService.switchToPlayer(playerId);
+  
+  /// Aktuelle Ressourcen des aktuellen Spielers
+  Map<String, int> get currentPlayerResources => _gameStateService.getCurrentPlayerResources();
+  
+  /// Alle Einheiten des aktuellen Spielers
+  List<Unit> get currentPlayerUnits => _gameStateService.getCurrentPlayerUnits();
+  
+  /// Alle Gebäude des aktuellen Spielers
+  List<Building> get currentPlayerBuildings => _gameStateService.getCurrentPlayerBuildings();
+  
+  // === END Mehrspielerzugriff ===
+  
+  /// Aktuelle Ressourcen des Spielers (Legacy - nutzt aktuellen Spieler)
+  Map<String, int> get playerResources => _gameStateService.getCurrentPlayerResources();
+  
+  /// Alle Einheiten des Spielers (Legacy - nutzt aktuellen Spieler)
+  List<Unit> get playerUnits => _gameStateService.getCurrentPlayerUnits();
+  
+  /// Alle Gebäude des Spielers (Legacy - nutzt aktuellen Spieler)
+  List<Building> get playerBuildings => _gameStateService.getCurrentPlayerBuildings();
   
   /// Feindliche Einheiten
   List<Unit> get enemyUnits => _gameStateService.getEnemyUnits();
@@ -152,6 +180,11 @@ class GameController {
   /// Springt zum feindlichen Hauptquartier
   void jumpToEnemyHeadquarters() {
     _gameActionService.jumpToEnemyHeadquarters();
+  }
+  
+  /// Springt zum ersten Siedler
+  void jumpToFirstSettler() {
+    _gameActionService.jumpToFirstSettler();
   }
   
   // === Building Actions ===

@@ -26,6 +26,7 @@ class DefensiveTower extends Building implements DefensiveStructure {
           level: level,
           maxHealth: maxHealth,
           currentHealth: currentHealth,
+          ownerID: ownerID,
         );
 
   factory DefensiveTower.create(Position position, {int? baseAttackValue, required String ownerID}) {
@@ -33,7 +34,7 @@ class DefensiveTower extends Building implements DefensiveStructure {
       id: const Uuid().v4(),
       position: position,
       baseAttackValue: baseAttackValue ?? 10,
-      ownerID: '',
+      ownerID: ownerID,
     );
   }
 
@@ -105,6 +106,7 @@ class DefensiveTower extends Building implements DefensiveStructure {
       ),
       creationTurn: 0,
       hasBuiltSomething: false,
+      ownerID: ownerID, // Pass the tower's owner ID to the virtual unit
     );
   }
 

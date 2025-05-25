@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_sim_city/models/buildings/building.dart';
 import 'package:flutter_sim_city/models/map/position.dart';
+import 'package:flutter_sim_city/models/units/unit.dart';
 import 'package:flutter_sim_city/services/game/base_game_service.dart';
 import 'package:flutter_sim_city/services/game/game_state_notifier.dart';
-import 'package:flutter_sim_city/widgets/game_map.dart';
 
 class CameraService extends BaseGameService {
   final Ref _ref;
@@ -30,6 +30,23 @@ class CameraService extends BaseGameService {
     return null;
   }
 
+  Position? getFirstSettlerPosition() {
+    // Get current player's settlers
+    final currentPlayerSettlers = state.currentPlayerUnits.where(
+      (unit) => unit.type == UnitType.settler
+    ).toList();
+    
+    print('Gefundene Siedler für aktuellen Spieler: ${currentPlayerSettlers.length}');
+    if (currentPlayerSettlers.isNotEmpty) {
+      final firstSettlerPos = currentPlayerSettlers.first.position;
+      print('Erster Siedler Position: (${firstSettlerPos.x}, ${firstSettlerPos.y})');
+      return firstSettlerPos;
+    }
+    
+    print('Keine Siedler für aktuellen Spieler gefunden!');
+    return null;
+  }
+
   void jumpToFirstCity() {
     final firstCityPosition = getFirstCityPosition();
     if (firstCityPosition == null) return;
@@ -47,6 +64,24 @@ class CameraService extends BaseGameService {
     }
   }
 
+  void jumpToFirstSettler() {
+    final firstSettlerPosition = getFirstSettlerPosition();
+    if (firstSettlerPosition == null) return;
+    
+    moveCamera(firstSettlerPosition);
+    
+    // Get current player's settlers
+    final currentPlayerSettlers = state.currentPlayerUnits.where(
+      (unit) => unit.type == UnitType.settler
+    ).toList();
+    
+    if (currentPlayerSettlers.isNotEmpty) {
+      _selectUnit(currentPlayerSettlers.first.id);
+      _jumpCameraToPosition(firstSettlerPosition);
+      print('Siedler ausgewählt! ID: ${currentPlayerSettlers.first.id}, Position: (${firstSettlerPosition.x}, ${firstSettlerPosition.y})');
+    }
+  }
+
   void jumpToEnemyHeadquarters() {
     if (state.enemyFaction?.headquarters == null) return;
     
@@ -60,6 +95,16 @@ class CameraService extends BaseGameService {
     updateState(state.copyWith(
       selectedUnitId: null,
       selectedBuildingId: buildingId,
+      selectedTilePosition: null,
+      buildingToBuild: null,
+      unitToTrain: null,
+    ));
+  }
+
+  void _selectUnit(String unitId) {
+    updateState(state.copyWith(
+      selectedUnitId: unitId,
+      selectedBuildingId: null,
       selectedTilePosition: null,
       buildingToBuild: null,
       unitToTrain: null,

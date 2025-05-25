@@ -33,6 +33,7 @@ class ActionPanel extends StatelessWidget {
   final VoidCallback onBuildDefensiveTower;  // New callback
   final VoidCallback onBuildWall;            // New callback
   final VoidCallback onUpgradeBuilding;
+  final VoidCallback onJumpToFirstSettler;   // New callback for settler navigation
 
   const ActionPanel({
     super.key,
@@ -51,6 +52,7 @@ class ActionPanel extends StatelessWidget {
     required this.onBuildDefensiveTower,  // New callback
     required this.onBuildWall,            // New callback  
     required this.onUpgradeBuilding,
+    required this.onJumpToFirstSettler,   // New callback for settler navigation
   });
 
   @override
@@ -204,7 +206,7 @@ class ActionPanel extends StatelessWidget {
       final farmTile = gameState.map.getTile(unit.position);
       if (builderUnit.canBuild(BuildingType.farm, farmTile)) {
         final farmCost = baseBuildingCosts[BuildingType.farm] ?? {};
-        final hasEnoughResources = gameState.resources.hasEnoughMultiple(farmCost);
+        final hasEnoughResources = gameState.getPlayerResources(gameState.currentPlayerId).hasEnoughMultiple(farmCost);
         
         // Build cost display in a consistent format
         final costText = farmCost.entries.map((e) => 
@@ -228,7 +230,7 @@ class ActionPanel extends StatelessWidget {
       final lumberTile = gameState.map.getTile(unit.position);
       if (builderUnit.canBuild(BuildingType.lumberCamp, lumberTile)) {
         final lumberCampCost = baseBuildingCosts[BuildingType.lumberCamp] ?? {};
-        final hasEnoughResources = gameState.resources.hasEnoughMultiple(lumberCampCost);
+        final hasEnoughResources = gameState.getPlayerResources(gameState.currentPlayerId).hasEnoughMultiple(lumberCampCost);
         
         // Build cost display in a consistent format
         final costText = lumberCampCost.entries.map((e) => 
@@ -252,7 +254,7 @@ class ActionPanel extends StatelessWidget {
       final mineTile = gameState.map.getTile(unit.position);
       if (builderUnit.canBuild(BuildingType.mine, mineTile)) {
         final mineCost = baseBuildingCosts[BuildingType.mine] ?? {};
-        final hasEnoughResources = gameState.resources.hasEnoughMultiple(mineCost);
+        final hasEnoughResources = gameState.getPlayerResources(gameState.currentPlayerId).hasEnoughMultiple(mineCost);
         
         // Build cost display in a consistent format
         final costText = mineCost.entries.map((e) => 
@@ -276,7 +278,7 @@ class ActionPanel extends StatelessWidget {
       final tile = gameState.map.getTile(unit.position);
       if (builderUnit.canBuild(BuildingType.barracks, tile)) {
         final barracksCost = baseBuildingCosts[BuildingType.barracks] ?? {};
-        final hasEnoughResources = gameState.resources.hasEnoughMultiple(barracksCost);
+        final hasEnoughResources = gameState.getPlayerResources(gameState.currentPlayerId).hasEnoughMultiple(barracksCost);
         
         // Build cost display in a consistent format
         final costText = barracksCost.entries.map((e) => 
@@ -301,7 +303,7 @@ class ActionPanel extends StatelessWidget {
       // Defensive Tower
       if (builderUnit.canBuild(BuildingType.defensiveTower, tile)) {
         final towerCost = baseBuildingCosts[BuildingType.defensiveTower] ?? {};
-        final hasEnoughResources = gameState.resources.hasEnoughMultiple(towerCost);
+        final hasEnoughResources = gameState.getPlayerResources(gameState.currentPlayerId).hasEnoughMultiple(towerCost);
         
         final costText = towerCost.entries.map((e) => 
           '${e.value} ${_getResourceEmoji(e.key)}'
@@ -319,7 +321,7 @@ class ActionPanel extends StatelessWidget {
       // Wall
       if (builderUnit.canBuild(BuildingType.wall, tile)) {
         final wallCost = baseBuildingCosts[BuildingType.wall] ?? {};
-        final hasEnoughResources = gameState.resources.hasEnoughMultiple(wallCost);
+        final hasEnoughResources = gameState.getPlayerResources(gameState.currentPlayerId).hasEnoughMultiple(wallCost);
         
         final costText = wallCost.entries.map((e) => 
           '${e.value} ${_getResourceEmoji(e.key)}'
@@ -412,7 +414,7 @@ class ActionPanel extends StatelessWidget {
             ].map((unitType) {
               // Get the cost for this unit type
               final unitCost = cityCenter.getUnitCost(unitType);
-              final hasEnoughFood = gameState.resources.hasEnough(ResourceType.food, unitCost);
+              final hasEnoughFood = gameState.getPlayerResources(gameState.currentPlayerId).hasEnough(ResourceType.food, unitCost);
               
               return ElevatedButton.icon(
                 onPressed: hasEnoughFood ? () => onTrain(unitType) : null,
@@ -451,16 +453,23 @@ class ActionPanel extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [UnitType.knight, UnitType.soldierTroop, UnitType.archer].map((unitType) {
-              // Get cost
-              final cost = barracks.getUnitCost(unitType);
-              final hasResources = gameState.resources.hasEnough(ResourceType.food, cost);
+            children: barracks.trainableUnits.map((unitType) {
+              // Get costs
+              final costs = barracks.getUnitCosts(unitType);
+              final foodCost = costs[ResourceType.food] ?? 0;
+              final ironCost = costs[ResourceType.iron] ?? 0;
+              
+              // Check if player has enough resources
+              final playerResources = gameState.getPlayerResources(gameState.currentPlayerId);
+              final hasEnoughFood = playerResources.hasEnough(ResourceType.food, foodCost);
+              final hasEnoughIron = playerResources.hasEnough(ResourceType.iron, ironCost);
+              final hasResources = hasEnoughFood && hasEnoughIron;
               
               return ElevatedButton.icon(
                 onPressed: hasResources ? () => onTrain(unitType) : null,
                 icon: Text(_getUnitEmoji(unitType)),
                 label: Text(
-                  '${_getUnitName(unitType)}\n(${cost} 🌾)',
+                  '${_getUnitName(unitType)}\n(${foodCost} 🌾, ${ironCost} ⛏️)',
                   style: const TextStyle(fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
@@ -498,8 +507,18 @@ class ActionPanel extends StatelessWidget {
     // Check if there's an enemy unit at this position
     final enemyUnit = _getEnemyUnitAt(position);
     if (enemyUnit != null) {
-      // Show enemy unit details
-      return _buildEnemyUnitDetails(enemyUnit);
+      // Show enemy unit details along with owner information
+      final owner = gameState.playerManager.getPlayer(enemyUnit.ownerID)?.name ?? 'Unknown';
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildEnemyUnitDetails(enemyUnit),
+          Text(
+            'Owner: $owner',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      );
     }
     
     if (tile.resourceType != null && tile.resourceAmount > 0) {
@@ -535,23 +554,6 @@ class ActionPanel extends StatelessWidget {
             'Move a specialist unit here to build:',
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 4),
-          const Text(
-            '• Farmer: Can build Farms',
-            textAlign: TextAlign.center,
-          ),
-          const Text(
-            '• Lumberjack: Can build Lumber Camps',
-            textAlign: TextAlign.center,
-          ),
-          const Text(
-            '• Miner: Can build Mines',
-            textAlign: TextAlign.center,
-          ),
-          const Text(
-            '• Settler: Can found Cities',
-            textAlign: TextAlign.center,
-          ),
         ],
       );
     } else {
@@ -584,7 +586,7 @@ class ActionPanel extends StatelessWidget {
           runSpacing: 8,
           alignment: WrapAlignment.center,
           children: costs.entries.map((entry) {
-            final hasResource = gameState.resources.hasEnough(entry.key, entry.value);
+            final hasResource = gameState.getPlayerResources(gameState.currentPlayerId).hasEnough(entry.key, entry.value);
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -621,10 +623,49 @@ class ActionPanel extends StatelessWidget {
   }
 
   Widget _buildGeneralActions(BuildContext context) {
-    // Unified phase - general information display
+    final currentPlayerId = gameState.currentPlayerId;
+    final hasNoCities = !_playerHasCities(currentPlayerId);
+    final hasSettlers = _playerHasSettlers(currentPlayerId);
+    
+    // Show "Jump to Settler" button if player has settlers but no cities
+    if (hasNoCities && hasSettlers) {
+      return Column(
+        children: [
+          ElevatedButton.icon(
+            onPressed: onJumpToFirstSettler,
+            icon: const Text('🧭'),
+            label: const Text('Jump to Settler'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              minimumSize: const Size(double.infinity, 48),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'You have no cities. Use your settler to found a city!',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontStyle: FontStyle.italic),
+          ),
+        ],
+      );
+    }
+    
+    // Default message when nothing is selected
     return const Text(
       'Select a unit, building, or tile to perform actions.',
       textAlign: TextAlign.center,
+    );
+  }
+
+  bool _playerHasCities(String playerId) {
+    return gameState.buildings.any(
+      (building) => building.type == BuildingType.cityCenter && building.ownerID == playerId
+    );
+  }
+
+  bool _playerHasSettlers(String playerId) {
+    return gameState.units.any(
+      (unit) => unit.ownerID == playerId && unit is SettlerCapable
     );
   }
 
@@ -634,7 +675,7 @@ class ActionPanel extends StatelessWidget {
     final upgradeCost = building.getUpgradeCost();
     
     // Prüfen, ob genügend Ressourcen vorhanden sind
-    final hasEnoughResources = gameState.resources.hasEnoughMultiple(upgradeCost);
+    final hasEnoughResources = gameState.getPlayerResources(gameState.currentPlayerId).hasEnoughMultiple(upgradeCost);
     
     // Zeige Upgrade-Kosten als Text
     final costText = upgradeCost.entries.map((e) => 
@@ -676,22 +717,6 @@ class ActionPanel extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Training costs:', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
-          ...UnitType.values.map((type) => Row(
-            children: [
-              SizedBox(
-                width: 20,
-                child: Text(_getUnitEmoji(type)),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                '${_getUnitName(type)}: ',
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-              Text('${cityCenter.getUnitCost(type)} ${_getResourceEmoji(ResourceType.food)}'),
-            ],
-          )).toList(),
-          const Divider(height: 16),
           Text(
             'Next upgrade: -10% training costs',
             style: TextStyle(

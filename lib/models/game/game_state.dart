@@ -18,6 +18,7 @@ import 'package:flutter_sim_city/models/units/unit.dart';
 import 'package:flutter_sim_city/models/units/unit_factory.dart';
 import 'package:flutter_sim_city/models/units/civilian/settler.dart';
 import 'package:flutter_sim_city/models/game/player_manager.dart';
+import 'package:flutter_sim_city/models/game/player.dart';
 
 /// Main state class for the game, following equatable pattern
 class GameState extends Equatable {
@@ -34,6 +35,7 @@ class GameState extends Equatable {
   final UnitType? unitToTrain;
   final EnemyFaction? enemyFaction;
   final PlayerManager playerManager;
+  final String currentPlayerId; // ADDED: Aktueller Spieler für Mehrspielerzüge
 
   const GameState({
     required this.map,
@@ -49,6 +51,7 @@ class GameState extends Equatable {
     this.unitToTrain,
     this.enemyFaction,
     required this.playerManager,
+    this.currentPlayerId = '', // Leerer String als Default - wird erst beim Hinzufügen von Spielern gesetzt
   });
 
   factory GameState.initial() {
@@ -68,6 +71,29 @@ class GameState extends Equatable {
     );
   }
 
+  /// Factory für ein leeres Spiel
+  /// Wird für moderne Multiplayer-Initialisierung verwendet
+  factory GameState.empty() {
+    print('🚀 GameState.empty() called - creating truly empty game state');
+    final map = TileMap();
+    final initialPosition = const Position(x: 0, y: 0);
+    
+    // Erstelle einen komplett leeren PlayerManager ohne Default-Spieler
+    final playerManager = PlayerManager.empty();
+    
+    return GameState(
+      map: map,
+      units: [],
+      buildings: [],
+      resources: ResourcesCollection.initial(), // Legacy-Ressourcen für UI-Kompatibilität
+      cameraPosition: initialPosition,
+      turn: 1,
+      enemyFaction: null,
+      playerManager: playerManager,
+      currentPlayerId: '' // Wird beim Hinzufügen von Spielern gesetzt
+    );
+  }
+
   GameState copyWith({
     TileMap? map,
     List<Unit>? units,
@@ -82,6 +108,7 @@ class GameState extends Equatable {
     UnitType? unitToTrain,
     EnemyFaction? enemyFaction,
     PlayerManager? playerManager,
+    String? currentPlayerId,
   }) {
     return GameState(
       map: map ?? this.map,
@@ -97,6 +124,7 @@ class GameState extends Equatable {
       unitToTrain: unitToTrain,
       enemyFaction: enemyFaction ?? this.enemyFaction,
       playerManager: playerManager ?? this.playerManager,
+      currentPlayerId: currentPlayerId ?? this.currentPlayerId,
     );
   }
 
@@ -134,7 +162,55 @@ class GameState extends Equatable {
   int get playerCount => playerManager.playerCount;
   int get humanPlayerCount => playerManager.humanPlayerCount;
   int get aiPlayerCount => playerManager.aiPlayerCount;
-  bool get isMultiplayer => playerManager.isMultiplayer;
+  /// Always returns true as the game now only uses multiplayer mode
+  bool get isMultiplayer => true;
+  
+  // ADDED: Mehrspielerzug-Management
+  /// Wechselt zum nächsten Spieler
+  GameState switchToNextPlayer() {
+    final playerIds = playerManager.activePlayers.map((p) => p.id).toList();
+    if (playerIds.isEmpty) return this;
+    
+    // Wenn kein aktueller Spieler gesetzt ist oder der aktuelle Spieler nicht mehr existiert,
+    // setze den ersten Spieler als aktuell
+    if (currentPlayerId.isEmpty || !playerIds.contains(currentPlayerId)) {
+      return copyWith(currentPlayerId: playerIds[0]);
+    }
+    
+    final currentIndex = playerIds.indexOf(currentPlayerId);
+    final nextIndex = (currentIndex + 1) % playerIds.length;
+    
+    return copyWith(currentPlayerId: playerIds[nextIndex]);
+  }
+  
+  /// Wechselt zu einem bestimmten Spieler
+  GameState switchToPlayer(String playerId) {
+    // Prüfe ob der Spieler existiert
+    if (playerId.isEmpty || !hasPlayer(playerId)) {
+      print('Warnung: Versuch, zu ungültigem Spieler "$playerId" zu wechseln');
+      return this;
+    }
+    return copyWith(currentPlayerId: playerId);
+  }
+  
+  /// Prüft ob der aktuelle Spieler ein Mensch ist
+  bool get isCurrentPlayerHuman => currentPlayerId.isNotEmpty && isHumanPlayer(currentPlayerId);
+  
+  /// Prüft ob der aktuelle Spieler KI ist
+  bool get isCurrentPlayerAI => currentPlayerId.isNotEmpty && isAIPlayer(currentPlayerId);
+  
+  /// Holt den aktuellen Spieler
+  Player? get currentPlayer => currentPlayerId.isNotEmpty ? playerManager.getPlayer(currentPlayerId) : null;
+  
+  /// Holt Einheiten des aktuellen Spielers
+  List<Unit> get currentPlayerUnits => currentPlayerId.isNotEmpty ? getUnitsByOwner(currentPlayerId) : [];
+  
+  /// Holt Gebäude des aktuellen Spielers
+  List<Building> get currentPlayerBuildings => currentPlayerId.isNotEmpty ? getBuildingsByOwner(currentPlayerId) : [];
+  
+  /// Holt Ressourcen des aktuellen Spielers
+  ResourcesCollection get currentPlayerResources => 
+      currentPlayerId.isNotEmpty ? getPlayerResources(currentPlayerId) : ResourcesCollection.initial();
 
   // Get selected unit
   Unit? get selectedUnit {
@@ -214,12 +290,20 @@ class GameState extends Equatable {
 
   // Next turn
   GameState nextTurn() {
-    // Process end of turn effects
-    final newResources = _collectResources();
+    // Process end of turn effects for each player
+    GameState newState = this;
+
+    // Collect resources for all players
+    for (final playerID in playerManager.playerIds) {
+      final currentPlayerResources = getPlayerResources(playerID);
+      final newPlayerResources = collectResourcesForPlayer(playerID, currentPlayerResources);
+      newState = newState.updatePlayerResources(playerID, newPlayerResources);
+    }
+
+    // Reset unit actions
     final newUnits = _resetUnitActions();
-    
-    return copyWith(
-      resources: newResources,
+
+    return newState.copyWith(
       units: newUnits,
       turn: turn + 1,
       selectedUnitId: null,
@@ -227,28 +311,9 @@ class GameState extends Equatable {
       selectedTilePosition: null,
       buildingToBuild: null,
       unitToTrain: null,
+      // Remove automatic player switching
+      // currentPlayerId: _nextPlayerId(),
     );
-  }
-
-  // Collect resources from buildings
-  ResourcesCollection _collectResources() {
-    var newResources = resources;
-    
-    for (final building in buildings) {
-      // Only collect resources from player-owned buildings
-      if (building.ownerID == 'player') {
-        if (building is Farm) {
-          newResources = newResources.add(ResourceType.food, building.foodPerTurn);
-        } else if (building is Mine) {
-          newResources = newResources.add(ResourceType.stone, building.stonePerTurn);
-          newResources = newResources.add(ResourceType.iron, building.ironPerTurn);
-        } else if (building is LumberCamp) {
-          newResources = newResources.add(ResourceType.wood, building.woodPerTurn);
-        }
-      }
-    }
-    
-    return newResources;
   }
 
   // Collect resources for a specific player
@@ -277,7 +342,7 @@ class GameState extends Equatable {
   }
 
   // Helper to create the right building type
-  Building createBuilding(BuildingType type, Position position, {String ownerID = 'player'}) {
+  Building createBuilding(BuildingType type, Position position, {required String ownerID}) {
     switch (type) {
       case BuildingType.cityCenter:
         return CityCenter.create(position, ownerID: ownerID);
@@ -299,7 +364,7 @@ class GameState extends Equatable {
   }
 
   // Helper to create the right unit type using the UnitFactory
-  Unit createUnit(UnitType type, Position position, {String ownerID = 'player'}) {
+  Unit createUnit(UnitType type, Position position, {required String ownerID}) {
     return UnitFactory.createUnit(type, position, ownerID: ownerID);
   }
 
@@ -434,6 +499,7 @@ class GameState extends Equatable {
       'turn': turn,
       'enemyFaction': enemyFaction?.toJson(),
       'playerManager': playerManager.toJson(),
+      'currentPlayerId': currentPlayerId,
     };
   }
   
@@ -454,6 +520,7 @@ class GameState extends Equatable {
       playerManager: json['playerManager'] != null 
           ? PlayerManager.fromJson(json['playerManager'])
           : PlayerManager.withDefaultPlayer(),
+      currentPlayerId: json['currentPlayerId'] ?? 'player',
     );
   }
 
@@ -522,5 +589,6 @@ class GameState extends Equatable {
     unitToTrain,
     enemyFaction,
     playerManager,
+    currentPlayerId, // ADDED: Aktueller Spieler
   ];
 }

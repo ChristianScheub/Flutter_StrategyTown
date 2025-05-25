@@ -132,6 +132,46 @@ class TurnInfoPanel extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
           ),
+          const SizedBox(height: 4),
+          
+          // Current Player Display
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+            decoration: BoxDecoration(
+              color: gameState.isCurrentPlayerHuman 
+                  ? Colors.blue.withOpacity(0.2) 
+                  : Colors.red.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: gameState.isCurrentPlayerHuman 
+                    ? Colors.blue 
+                    : Colors.red,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  gameState.isCurrentPlayerHuman ? Icons.person : Icons.computer,
+                  color: gameState.isCurrentPlayerHuman ? Colors.blue : Colors.red,
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'Current: ${gameState.currentPlayerId}',
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: gameState.isCurrentPlayerHuman ? Colors.blue.shade700 : Colors.red.shade700,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 8),
           
           // Player scores section

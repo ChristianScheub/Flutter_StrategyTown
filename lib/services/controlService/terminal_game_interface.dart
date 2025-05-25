@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_sim_city/models/buildings/building.dart';
+import 'package:flutter_sim_city/models/map/tile.dart';
+import 'package:flutter_sim_city/models/resource/resource.dart';
 import 'package:flutter_sim_city/models/units/unit.dart';
 import 'package:flutter_sim_city/models/map/position.dart';
 import 'package:flutter_sim_city/services/controlService/game_controller.dart';
@@ -19,14 +21,15 @@ class TerminalGameInterface {
   /// Gibt den aktuellen Spielzustand als String zurück
   String getGameStatus() {
     final state = _gameController.currentGameState;
-    final resources = _gameController.playerResources;
-    final playerUnits = _gameController.playerUnits.length;
-    final playerBuildings = _gameController.playerBuildings.length;
+    final resources = _gameController.currentPlayerResources;
+    final playerUnits = _gameController.currentPlayerUnits.length;
+    final playerBuildings = _gameController.currentPlayerBuildings.length;
     final enemyUnits = _gameController.enemyUnits.length;
     final enemyBuildings = _gameController.enemyBuildings.length;
     
     return """
-GAME STATUS - Turn ${state.turn}
+GAME STATUS - Turn ${state.turn} | Current Player: ${_gameController.currentPlayerId}
+Player Type: ${_gameController.isCurrentPlayerHuman ? 'Human' : 'AI'}
 Resources: Food=${resources['food']}, Wood=${resources['wood']}, Stone=${resources['stone']}, Gold=${resources['gold']}
 Player Units: $playerUnits, Player Buildings: $playerBuildings
 Enemy Units: $enemyUnits, Enemy Buildings: $enemyBuildings
@@ -66,12 +69,21 @@ AVAILABLE ACTIONS:
 27. save_game [saveName] - Save current game
 28. load_game <saveKey> - Load saved game
 29. start_new_game - Start a new game
+
+MULTIPLAYER COMMANDS:
+30. switch_player - Switch to next player
+31. switch_to_player <playerId> - Switch to specific player
+32. get_current_player - Get current player info
+33. list_all_players - List all players in game
+34. get_player_resources <playerId> - Get specific player's resources
+35. get_player_units <playerId> - Get specific player's units
+36. get_player_buildings <playerId> - Get specific player's buildings
     """.trim();
   }
   
   /// Listet alle Einheiten des Spielers auf
   String listPlayerUnits() {
-    final units = _gameController.playerUnits;
+    final units = _gameController.currentPlayerUnits;
     if (units.isEmpty) {
       return "No player units found.";
     }
@@ -86,7 +98,7 @@ AVAILABLE ACTIONS:
   
   /// Listet alle Gebäude des Spielers auf
   String listPlayerBuildings() {
-    final buildings = _gameController.playerBuildings;
+    final buildings = _gameController.currentPlayerBuildings;
     if (buildings.isEmpty) {
       return "No player buildings found.";
     }
@@ -317,9 +329,9 @@ AVAILABLE ACTIONS:
   /// Erweiterte Spiel-Informationen
   String getDetailedGameStatus() {
     final state = _gameController.currentGameState;
-    final resources = _gameController.playerResources;
-    final playerUnits = _gameController.playerUnits;
-    final playerBuildings = _gameController.playerBuildings;
+    final resources = _gameController.currentPlayerResources;
+    final playerUnits = _gameController.currentPlayerUnits;
+    final playerBuildings = _gameController.currentPlayerBuildings;
     final enemyUnits = _gameController.enemyUnits;
     final enemyBuildings = _gameController.enemyBuildings;
     
@@ -404,169 +416,350 @@ AVAILABLE ACTIONS:
     return success ? "Player '$playerId' removed" : "Failed to remove player '$playerId'";
   }
   
-  /// Kommando-Prozessor für String-basierte Eingaben
-  String processCommand(String command) {
-    final parts = command.trim().split(' ');
-    if (parts.isEmpty) return "Empty command";
+  // === ADDED: Mehrspielerbefehle ===
+  
+  /// Wechselt zum nächsten Spieler
+  String switchPlayer() {
+    final currentPlayer = _gameController.currentPlayerId;
+    _gameController.switchToNextPlayer();
+    final newPlayer = _gameController.currentPlayerId;
+    return "Switched from '$currentPlayer' to '$newPlayer'";
+  }
+  
+  /// Wechselt zu einem bestimmten Spieler
+  String switchToPlayer(String playerId) {
+    if (!_gameController.currentGameState.hasPlayer(playerId)) {
+      return "Player '$playerId' not found";
+    }
+    final currentPlayer = _gameController.currentPlayerId;
+    _gameController.switchToPlayer(playerId);
+    return "Switched from '$currentPlayer' to '$playerId'";
+  }
+  
+  /// Holt Informationen über den aktuellen Spieler
+  String getCurrentPlayer() {
+    final playerId = _gameController.currentPlayerId;
+    final isHuman = _gameController.isCurrentPlayerHuman;
+    final resources = _gameController.currentPlayerResources;
+    final unitCount = _gameController.currentPlayerUnits.length;
+    final buildingCount = _gameController.currentPlayerBuildings.length;
     
-    final cmd = parts[0].toLowerCase();
+    return """
+CURRENT PLAYER: $playerId
+Type: ${isHuman ? 'Human' : 'AI'}
+Resources: Food=${resources['food']}, Wood=${resources['wood']}, Stone=${resources['stone']}, Gold=${resources['gold']}
+Units: $unitCount, Buildings: $buildingCount
+    """.trim();
+  }
+  
+  /// Listet alle Spieler auf
+  String listAllPlayers() {
+    final playerIds = _gameController.getAllPlayerIds();
+    if (playerIds.isEmpty) {
+      return "No players found";
+    }
     
-    try {
-      switch (cmd) {
-        case 'move_unit':
-          if (parts.length < 4) return "Usage: move_unit <unitId> <x> <y>";
-          return moveUnit(parts[1], int.parse(parts[2]), int.parse(parts[3]));
-          
-        case 'attack':
-          if (parts.length < 4) return "Usage: attack <attackerUnitId> <targetX> <targetY>";
-          return attackTarget(parts[1], int.parse(parts[2]), int.parse(parts[3]));
-          
-        case 'build':
-          if (parts.length < 4) return "Usage: build <buildingType> <x> <y>";
-          return buildBuilding(parts[1], int.parse(parts[2]), int.parse(parts[3]));
-          
-        case 'train_unit':
-          if (parts.length < 3) return "Usage: train_unit <unitType> <buildingId>";
-          return trainUnit(parts[1], parts[2]);
-          
-        case 'select_unit':
-          if (parts.length < 2) return "Usage: select_unit <unitId>";
-          return selectUnit(parts[1]);
-          
-        case 'select_building':
-          if (parts.length < 2) return "Usage: select_building <buildingId>";
-          return selectBuilding(parts[1]);
-          
-        case 'select_tile':
-          if (parts.length < 3) return "Usage: select_tile <x> <y>";
-          return selectTile(int.parse(parts[1]), int.parse(parts[2]));
-          
-        case 'select_building_to_build':
-          if (parts.length < 2) return "Usage: select_building_to_build <buildingType>";
-          return selectBuildingToBuild(parts[1]);
-          
-        case 'select_unit_to_train':
-          if (parts.length < 2) return "Usage: select_unit_to_train <unitType>";
-          return selectUnitToTrain(parts[1]);
-          
-        case 'build_at_position':
-          if (parts.length < 3) return "Usage: build_at_position <x> <y>";
-          return buildBuildingAtPosition(int.parse(parts[1]), int.parse(parts[2]));
-          
-        case 'train_generic':
-          if (parts.length < 2) return "Usage: train_generic <unitType>";
-          return trainUnitGeneric(parts[1]);
-          
-        case 'add_human_player':
-          if (parts.length < 2) return "Usage: add_human_player <playerName> [playerId]";
-          final playerId = parts.length > 2 ? parts[2] : null;
-          return addHumanPlayer(parts[1], playerId);
-          
-        case 'add_ai_player':
-          if (parts.length < 2) return "Usage: add_ai_player <playerName> [playerId]";
-          final playerId = parts.length > 2 ? parts[2] : null;
-          return addAIPlayer(parts[1], playerId);
-          
-        case 'remove_player':
-          if (parts.length < 2) return "Usage: remove_player <playerId>";
-          return removePlayer(parts[1]);
-          
-        case 'save_game':
-          final saveName = parts.length > 1 ? parts.sublist(1).join(' ') : null;
-          return saveGame(saveName).toString(); // This will be handled as Future
-          
-        case 'load_game':
-          if (parts.length < 2) return "Usage: load_game <saveKey>";
-          return loadGame(parts[1]).toString(); // This will be handled as Future
-          
-        // Einfache Aktionen ohne Parameter
-        case 'found_city': return foundCity();
-        case 'harvest': return harvestResource();
-        case 'end_turn': return endTurn();
-        case 'clear_selection': return clearSelection();
-        case 'upgrade_building': return upgradeBuilding();
-        case 'jump_to_first_city': return jumpToFirstCity();
-        case 'jump_to_enemy_hq': return jumpToEnemyHeadquarters();
-        case 'build_farm': return buildFarm();
-        case 'build_lumber_camp': return buildLumberCamp();
-        case 'build_mine': return buildMine();
-        case 'build_barracks': return buildBarracks();
-        case 'build_defensive_tower': return buildDefensiveTower();
-        case 'build_wall': return buildWall();
-        case 'start_new_game': return startNewGame();
-        
-        // Informations-Abfragen
-        case 'get_status': return getGameStatus();
-        case 'get_detailed_status': return getDetailedGameStatus();
-        case 'get_actions': return getAvailableActions();
-        case 'get_units': return listPlayerUnits();
-        case 'get_buildings': return listPlayerBuildings();
-        case 'get_enemy_units': return listEnemyUnits();
-        case 'get_enemy_buildings': return listEnemyBuildings();
-        case 'get_players': return listPlayers();
-        
-        case 'help':
-          return getAvailableActions();
-          
-        default:
-          return "Unknown command: $cmd. Type 'help' for available commands.";
+    final buffer = StringBuffer("ALL PLAYERS:\n");
+    for (final playerId in playerIds) {
+      final isHuman = _gameController.currentGameState.isHumanPlayer(playerId);
+      final isCurrent = playerId == _gameController.currentPlayerId;
+      final marker = isCurrent ? " [CURRENT]" : "";
+      buffer.writeln("  $playerId (${isHuman ? 'Human' : 'AI'})$marker");
+    }
+    
+    return buffer.toString().trim();
+  }
+  
+  /// Holt Ressourcen eines bestimmten Spielers
+  String getPlayerResources(String playerId) {
+    if (!_gameController.currentGameState.hasPlayer(playerId)) {
+      return "Player '$playerId' not found";
+    }
+    
+    final resources = _gameController.currentGameState.getPlayerResources(playerId);
+    return "PLAYER '$playerId' RESOURCES: Food=${resources.getAmount(ResourceType.food)}, Wood=${resources.getAmount(ResourceType.wood)}, Stone=${resources.getAmount(ResourceType.stone)}, Gold=${resources.getAmount(ResourceType.iron)}";
+  }
+  
+  /// Holt Einheiten eines bestimmten Spielers
+  String getPlayerUnits(String playerId) {
+    if (!_gameController.currentGameState.hasPlayer(playerId)) {
+      return "Player '$playerId' not found";
+    }
+    
+    final units = _gameController.currentGameState.getUnitsByOwner(playerId);
+    if (units.isEmpty) {
+      return "Player '$playerId' has no units";
+    }
+    
+    final buffer = StringBuffer("PLAYER '$playerId' UNITS:\n");
+    for (final unit in units) {
+      buffer.writeln("  ${unit.id}: ${unit.displayName} at (${unit.position.x}, ${unit.position.y})");
+    }
+    
+    return buffer.toString().trim();
+  }
+  
+  /// Holt Gebäude eines bestimmten Spielers
+  String getPlayerBuildings(String playerId) {
+    if (!_gameController.currentGameState.hasPlayer(playerId)) {
+      return "Player '$playerId' not found";
+    }
+    
+    final buildings = _gameController.currentGameState.getBuildingsByOwner(playerId);
+    if (buildings.isEmpty) {
+      return "Player '$playerId' has no buildings";
+    }
+    
+    final buffer = StringBuffer("PLAYER '$playerId' BUILDINGS:\n");
+    for (final building in buildings) {
+      buffer.writeln("  ${building.id}: ${building.displayName} at (${building.position.x}, ${building.position.y})");
+    }
+    
+    return buffer.toString().trim();
+  }
+  
+  /// Gibt detaillierte Statistiken für einen Spieler zurück
+  String getPlayerStatistics(String playerId) {
+    final gameState = _gameController.currentGameState;
+    
+    if (!gameState.hasPlayer(playerId)) {
+      return "Player '$playerId' not found";
+    }
+    
+    final stats = gameState.getPlayerStatistics()[playerId];
+    if (stats == null) {
+      return "No statistics available for player '$playerId'";
+    }
+    
+    final buffer = StringBuffer("STATISTICS FOR PLAYER '$playerId':\n");
+    
+    stats.forEach((key, value) {
+      buffer.writeln("  $key: $value");
+    });
+    
+    return buffer.toString().trim();
+  }
+  
+  /// Gibt die Punktzahl für alle Spieler zurück
+  String getScoreboard() {
+    final gameState = _gameController.currentGameState;
+    final players = gameState.getAllPlayerIDs();
+    
+    if (players.isEmpty) {
+      return "No players found";
+    }
+    
+    final buffer = StringBuffer("SCOREBOARD:\n");
+    
+    // Sammle Statistiken für jeden Spieler
+    final scoreData = <String, Map<String, dynamic>>{};
+    for (final playerId in players) {
+      final stats = gameState.getPlayerStatistics()[playerId];
+      if (stats != null) {
+        scoreData[playerId] = stats;
       }
-    } catch (e) {
-      return "Error processing command '$command': $e";
     }
+    
+    // Sortiere Spieler nach Punkten (falls verfügbar) oder Einheiten+Gebäude
+    final sortedPlayers = players.toList()
+      ..sort((a, b) {
+        final statsA = scoreData[a];
+        final statsB = scoreData[b];
+        
+        if (statsA == null || statsB == null) return 0;
+        
+        // Wenn es explizite Punkte gibt, verwende diese
+        if (statsA.containsKey('score') && statsB.containsKey('score')) {
+          return (statsB['score'] as num).compareTo(statsA['score'] as num);
+        }
+        
+        // Ansonsten verwende Einheiten + Gebäude als Proxy für Punkte
+        final unitsA = statsA['units'] as int? ?? 0;
+        final buildingsA = statsA['buildings'] as int? ?? 0;
+        final unitsB = statsB['units'] as int? ?? 0;
+        final buildingsB = statsB['buildings'] as int? ?? 0;
+        
+        return (unitsB + buildingsB).compareTo(unitsA + buildingsA);
+      });
+    
+    // Ausgabe der sortierten Punktetabelle
+    for (int i = 0; i < sortedPlayers.length; i++) {
+      final playerId = sortedPlayers[i];
+      final stats = scoreData[playerId];
+      final isHuman = gameState.isHumanPlayer(playerId);
+      final isCurrent = playerId == gameState.currentPlayerId;
+      
+      buffer.write("  ${i + 1}. $playerId (${isHuman ? 'Human' : 'AI'})");
+      if (isCurrent) buffer.write(" [CURRENT]");
+      buffer.write(": ");
+      
+      if (stats != null) {
+        if (stats.containsKey('score')) {
+          buffer.write("Score: ${stats['score']}, ");
+        }
+        
+        final units = stats['units'] as int? ?? 0;
+        final buildings = stats['buildings'] as int? ?? 0;
+        final settlements = stats['settlements'] as int? ?? 0;
+        
+        buffer.write("Units: $units, Buildings: $buildings, Settlements: $settlements");
+      } else {
+        buffer.write("No statistics available");
+      }
+      
+      buffer.writeln();
+    }
+    
+    return buffer.toString().trim();
   }
   
-  // === Helper Methoden ===
-  
-  BuildingType? _parseBuildingType(String typeStr) {
-    switch (typeStr.toLowerCase()) {
-      case 'citycenter':
-      case 'city':
-        return BuildingType.cityCenter;
-      case 'farm':
-        return BuildingType.farm;
-      case 'lumbercamp':
-      case 'lumber':
-        return BuildingType.lumberCamp;
-      case 'mine':
-        return BuildingType.mine;
-      case 'barracks':
-        return BuildingType.barracks;
-      case 'defensivetower':
-      case 'tower':
-        return BuildingType.defensiveTower;
-      case 'wall':
-        return BuildingType.wall;
-      default:
-        return null;
+  /// Gibt die verfügbaren Ressourcen auf einer Kachel zurück
+  String getTileResources(int x, int y) {
+    final position = Position(x: x, y: y);
+    final gameState = _gameController.currentGameState;
+    
+    if (!gameState.map.isValidPosition(position)) {
+      return "Invalid position ($x, $y)";
     }
+    
+    final tile = gameState.map.getTile(position);
+    
+    if (tile.resourceType == null) {
+      return "No resources at position ($x, $y)";
+    }
+    
+    return "RESOURCES AT ($x, $y): ${tile.resourceType} (amount: ${tile.resourceAmount})";
   }
   
-  UnitType? _parseUnitType(String typeStr) {
-    switch (typeStr.toLowerCase()) {
-      case 'settler':
-        return UnitType.settler;
-      case 'farmer':
-        return UnitType.farmer;
-      case 'lumberjack':
-      case 'worker':
-        return UnitType.lumberjack;
-      case 'miner':
-        return UnitType.miner;
-      case 'commander':
-        return UnitType.commander;
-      case 'knight':
-        return UnitType.knight;
-      case 'soldier':
-      case 'warrior':
-        return UnitType.soldierTroop;
-      case 'archer':
-        return UnitType.archer;
-      case 'architect':
-        return UnitType.architect;
-      default:
-        return null;
+  /// Gibt Informationen über eine bestimmte Kachel zurück
+  String getTileInfo(int x, int y) {
+    final position = Position(x: x, y: y);
+    final gameState = _gameController.currentGameState;
+    
+    if (!gameState.map.isValidPosition(position)) {
+      return "Invalid position ($x, $y)";
     }
+    
+    final tile = gameState.map.getTile(position);
+    final units = gameState.getUnitsAt(position);
+    final building = gameState.getBuildingAt(position);
+    
+    final buffer = StringBuffer("TILE INFO ($x, $y):\n");
+    buffer.writeln("  Type: ${tile.type}");
+    buffer.writeln("  Walkable: ${tile.isWalkable}");
+    buffer.writeln("  Can build on: ${tile.canBuildOn}");
+    
+    if (tile.resourceType != null) {
+      buffer.writeln("  Resource: ${tile.resourceType} (amount: ${tile.resourceAmount})");
+    } else {
+      buffer.writeln("  Resource: none");
+    }
+    
+    if (units.isNotEmpty) {
+      buffer.writeln("  Units:");
+      for (final unit in units) {
+        buffer.writeln("    - ${unit.displayName} (owner: ${unit.ownerID})");
+      }
+    }
+    
+    if (building != null) {
+      buffer.writeln("  Building: ${building.displayName} (owner: ${building.ownerID}, level: ${building.level})");
+    }
+    
+    return buffer.toString().trim();
+  }
+  
+  /// Gibt eine Karte der Umgebung um eine Position herum zurück
+  String getAreaMap(int centerX, int centerY, {int radius = 5}) {
+    final position = Position(x: centerX, y: centerY);
+    final gameState = _gameController.currentGameState;
+    
+    if (!gameState.map.isValidPosition(position)) {
+      return "Invalid position ($centerX, $centerY)";
+    }
+    
+    final buffer = StringBuffer("MAP AREA around ($centerX, $centerY) with radius $radius:\n");
+    
+    // Koordinatenlegende oben
+    buffer.write("   ");
+    for (int x = centerX - radius; x <= centerX + radius; x++) {
+      buffer.write("${x % 10}");
+    }
+    buffer.writeln();
+    
+    for (int y = centerY - radius; y <= centerY + radius; y++) {
+      // Y-Koordinate links
+      buffer.write("${y % 10} |");
+      
+      for (int x = centerX - radius; x <= centerX + radius; x++) {
+        final pos = Position(x: x, y: y);
+        
+        if (!gameState.map.isValidPosition(pos)) {
+          buffer.write("?"); // Außerhalb der Karte
+          continue;
+        }
+        
+        final tile = gameState.map.getTile(pos);
+        final units = gameState.getUnitsAt(pos);
+        final building = gameState.getBuildingAt(pos);
+        
+        // Symbole für Karte:
+        // Einheit hat höchste Priorität, dann Gebäude, dann Gelände
+        if (units.isNotEmpty) {
+          final unit = units.first;
+          if (unit.ownerID == gameState.currentPlayerId) {
+            if (unit.isCombatUnit) buffer.write("S"); // Eigener Soldat
+            else buffer.write("U"); // Eigene zivile Einheit
+          } else {
+            if (unit.isCombatUnit) buffer.write("E"); // Feindlicher Soldat
+            else buffer.write("e"); // Feindliche zivile Einheit
+          }
+        } else if (building != null) {
+          if (building.ownerID == gameState.currentPlayerId) {
+            buffer.write("B"); // Eigenes Gebäude
+          } else {
+            buffer.write("b"); // Feindliches Gebäude
+          }
+        } else if (tile.resourceType != null) {
+          // Ressource
+          if (tile.resourceType == ResourceType.food) {
+            buffer.write("F");
+          } else if (tile.resourceType == ResourceType.wood) {
+            buffer.write("W");
+          } else if (tile.resourceType == ResourceType.stone) {
+            buffer.write("S");
+          } else if (tile.resourceType == ResourceType.iron) {
+            buffer.write("I");
+          } else {
+            buffer.write("R");
+          }
+        } else {
+          // Gelände
+          if (tile.type == TileType.grass) {
+            buffer.write(".");
+          } else if (tile.type == TileType.water) {
+            buffer.write("~");
+          } else if (tile.type == TileType.mountain) {
+            buffer.write("^");
+          } else if (tile.type == TileType.forest) {
+            buffer.write("f");
+          } else {
+            buffer.write("?");
+          }
+        }
+      }
+      
+      buffer.writeln("|");
+    }
+    
+    // Legende
+    buffer.writeln("\nLEGEND:");
+    buffer.writeln("  Terrain: . = Grass, ~ = Water, ^ = Mountain, f = Forest");
+    buffer.writeln("  Resources: F = Food, W = Wood, S = Stone, I = Iron");
+    buffer.writeln("  Buildings: B = Your building, b = Enemy building");
+    buffer.writeln("  Units: U = Your civilian, S = Your soldier, e = Enemy civilian, E = Enemy soldier");
+    
+    return buffer.toString();
   }
 }
 

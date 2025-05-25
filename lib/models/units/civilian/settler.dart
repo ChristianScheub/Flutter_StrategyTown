@@ -21,7 +21,7 @@ class Settler extends CivilianUnit implements SettlerCapable {
     this.canFoundCityNow = true,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
-    String ownerID = 'player',
+    required String ownerID,
   }) : super(
           id: id,
           type: UnitType.settler,
@@ -36,7 +36,7 @@ class Settler extends CivilianUnit implements SettlerCapable {
           ownerID: ownerID,
         );
 
-  factory Settler.create(Position position, {int creationTurn = 0, String ownerID = 'player'}) {
+  factory Settler.create(Position position, {int creationTurn = 0, required String ownerID}) {
     return Settler(
       id: const Uuid().v4(),
       position: position,

@@ -20,7 +20,7 @@ abstract class CivilianUnit extends Unit {
     bool isSelected = false,
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
-    String ownerID = 'player',
+    required String ownerID,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
   }) : currentHealth = currentHealth ?? maxHealth,
@@ -92,7 +92,7 @@ abstract class MilitaryUnit extends Unit {
     required CombatCapability combatCapability,
     BuildingCapability? buildingCapability,
     HarvestingCapability? harvestingCapability,
-    String ownerID = 'player',
+    required String ownerID,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
   }) : super(

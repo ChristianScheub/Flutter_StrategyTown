@@ -3,37 +3,49 @@ import 'package:flutter_sim_city/models/buildings/building_abilities.dart';
 import 'package:flutter_sim_city/models/map/position.dart';
 import 'package:flutter_sim_city/models/resource/resource.dart';
 import 'package:flutter_sim_city/models/units/unit.dart';
+import 'package:flutter_sim_city/models/units/unit_factory.dart';
 import 'package:uuid/uuid.dart';
 
 class Barracks extends Building implements UnitTrainer, DefensiveStructure {
-  final Map<ResourceType, int> _trainingCosts;
-
+  // Lookup table for unit base costs
+  final Map<UnitType, Map<ResourceType, int>> _unitTypeCosts = {
+    UnitType.archer: {
+      ResourceType.food: 120,
+      ResourceType.iron: 20,
+    },
+    UnitType.soldierTroop: {
+      ResourceType.food: 100,
+      ResourceType.iron: 30,
+    },
+    UnitType.knight: {
+      ResourceType.food: 150,
+      ResourceType.iron: 50,
+    },
+  };
+  
   Barracks({
     required String id,
     required Position position,
     int level = 1,
     int? maxHealth,
     int? currentHealth,
-    Map<ResourceType, int>? trainingCosts,
-    String ownerID = 'player',
-  }) : _trainingCosts = trainingCosts ?? {
-         ResourceType.food: 50,
-         ResourceType.iron: 20,
-       },
-       super(
+    required String ownerID,
+  })
+       : super(
          id: id,
          type: BuildingType.barracks,
          position: position,
          level: level,
          maxHealth: maxHealth,
          currentHealth: currentHealth,
+         ownerID: ownerID,
        );
 
-  factory Barracks.create(Position position, {Map<ResourceType, int>? trainingCosts, required String ownerID}) {
+  factory Barracks.create(Position position, {required String ownerID}) {
     return Barracks(
       id: const Uuid().v4(),
       position: position,
-      trainingCosts: trainingCosts,
+      ownerID: ownerID,
     );
   }
 
@@ -52,7 +64,6 @@ class Barracks extends Building implements UnitTrainer, DefensiveStructure {
     int? maxHealth,
     int? currentHealth,
     String? ownerID,
-    Map<ResourceType, int>? trainingCosts,
   }) {
     return Barracks(
       id: id ?? this.id,
@@ -61,10 +72,17 @@ class Barracks extends Building implements UnitTrainer, DefensiveStructure {
       maxHealth: maxHealth ?? this.maxHealth,
       currentHealth: currentHealth ?? this.currentHealth,
       ownerID: ownerID ?? this.ownerID,
-      trainingCosts: trainingCosts ?? _trainingCosts,
     );
   }
 
+  Map<ResourceType, int> getUnitCosts(UnitType unitType) {
+    if (!canTrainUnit(unitType)) return {};
+    
+    // Get the training costs with level discount applied
+    return getTrainingCost(unitType);
+  }
+  
+  // Für Abwärtskompatibilität
   int getUnitCost(UnitType unitType) {
     if (!canTrainUnit(unitType)) return 0;
     
@@ -85,9 +103,15 @@ class Barracks extends Building implements UnitTrainer, DefensiveStructure {
   Map<ResourceType, int> getTrainingCost(UnitType unitType) {
     if (!canTrainUnit(unitType)) return {};
     
+    // Hole die Basiskosten für den Einheitentyp
+    final baseCosts = _unitTypeCosts[unitType] ?? {
+      ResourceType.food: UnitFactory.getUnitFoodCost(unitType),
+      ResourceType.iron: unitType == UnitType.knight ? 50 : (unitType == UnitType.soldierTroop ? 30 : 20),
+    };
+    
     // Apply level discount
     final discount = 1.0 - ((level - 1) * 0.1); // 10% discount per level
-    return _trainingCosts.map((type, cost) =>
+    return baseCosts.map((type, cost) =>
       MapEntry(type, (cost * discount).round())
     );
   }
@@ -113,5 +137,5 @@ class Barracks extends Building implements UnitTrainer, DefensiveStructure {
   int get attackValue => 0; // Barracks can't attack
 
   @override
-  List<Object?> get props => [...super.props, _trainingCosts];
+  List<Object?> get props => [...super.props];
 }

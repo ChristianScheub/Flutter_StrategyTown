@@ -23,7 +23,7 @@ class Commander extends MilitaryUnit implements BuilderUnit {
     this.buildingCapability,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
-    String ownerID = 'player',
+    required String ownerID,
   }) : super(
           id: id,
           type: UnitType.commander,
@@ -35,6 +35,7 @@ class Commander extends MilitaryUnit implements BuilderUnit {
           buildingCapability: buildingCapability,
           creationTurn: creationTurn,
           hasBuiltSomething: hasBuiltSomething,
+          ownerID: ownerID,
         );
 
   factory Commander.create(Position position, {int creationTurn = 0, required String ownerID}) {
@@ -42,6 +43,7 @@ class Commander extends MilitaryUnit implements BuilderUnit {
       id: const Uuid().v4(),
       position: position,
       creationTurn: creationTurn,
+      ownerID: ownerID,
       combatCapability: const CombatCapability(
         attackValue: 5,
         defenseValue: 5,

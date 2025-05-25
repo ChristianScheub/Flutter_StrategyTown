@@ -33,7 +33,7 @@ class SpecializedBuildingService extends BaseGameService {
     final tile = state.map.getTile(unit.position);
     if (!tile.canBuildOn) return;
     
-    final cityCenter = state.createBuilding(BuildingType.cityCenter, unit.position);
+    final cityCenter = state.createBuilding(BuildingType.cityCenter, unit.position, ownerID: unit.ownerID);
     final newTile = tile.copyWith(hasBuilding: true);
     state.map.setTile(newTile);
     
@@ -45,14 +45,14 @@ class SpecializedBuildingService extends BaseGameService {
         buildings: [...state.buildings, cityCenter],
         selectedUnitId: null,
       ),
-      "player"
+      unit.ownerID
     ));
   }
 
   void buildFarm() {
     _buildWithSpecializedUnit<Farmer>(
       BuildingType.farm,
-      (position) => Farm.create(position, ownerID: "player"),
+      (position) => Farm.create(position, ownerID: state.currentPlayerId),
       consumeUnit: true
     );
   }
@@ -60,7 +60,7 @@ class SpecializedBuildingService extends BaseGameService {
   void buildLumberCamp() {
     _buildWithSpecializedUnit<Lumberjack>(
       BuildingType.lumberCamp,
-      (position) => LumberCamp.create(position, ownerID: "player"),
+      (position) => LumberCamp.create(position, ownerID: state.currentPlayerId),
       consumeUnit: true
     );
   }
@@ -74,7 +74,7 @@ class SpecializedBuildingService extends BaseGameService {
     
     _buildWithSpecializedUnit<Miner>(
       BuildingType.mine,
-      (position) => Mine.create(position, isIronMine: isIronMine, ownerID: "player"),
+      (position) => Mine.create(position, isIronMine: isIronMine, ownerID: state.currentPlayerId),
       consumeUnit: true
     );
   }
@@ -82,7 +82,7 @@ class SpecializedBuildingService extends BaseGameService {
   void buildBarracks() {
     _buildWithSpecializedUnit<Commander>(
       BuildingType.barracks,
-      (position) => Barracks.create(position, ownerID: "player"),
+      (position) => Barracks.create(position, ownerID: state.currentPlayerId),
       actionCost: 2
     );
   }
@@ -90,7 +90,7 @@ class SpecializedBuildingService extends BaseGameService {
   void buildDefensiveTower() {
     _buildWithSpecializedUnit<Architect>(
       BuildingType.defensiveTower,
-      (position) => DefensiveTower.create(position, ownerID: "player"),
+      (position) => DefensiveTower.create(position, ownerID: state.currentPlayerId),
       getActionCost: (unit) => (unit as Architect).getBuildActionCost(BuildingType.defensiveTower)
     );
   }
@@ -98,7 +98,7 @@ class SpecializedBuildingService extends BaseGameService {
   void buildWall() {
     _buildWithSpecializedUnit<Architect>(
       BuildingType.wall,
-      (position) => Wall.create(position, ownerID: "player"),
+      (position) => Wall.create(position, ownerID: state.currentPlayerId),
       getActionCost: (unit) => (unit as Architect).getBuildActionCost(BuildingType.wall)
     );
   }
@@ -119,7 +119,8 @@ class SpecializedBuildingService extends BaseGameService {
     if (!builderUnit.canBuild(buildingType, tile as Tile)) return;
     
     final buildingCost = baseBuildingCosts[buildingType] ?? {};
-    if (!hasEnoughResources(buildingCost)) return;
+    final currentPlayerResources = state.getPlayerResources(state.currentPlayerId);
+    if (!currentPlayerResources.hasEnoughMultiple(buildingCost)) return;
     
     final newBuilding = createBuilding(unit.position);
     final newTile = tile.copyWith(hasBuilding: true);
@@ -135,16 +136,17 @@ class SpecializedBuildingService extends BaseGameService {
       }).toList();
     }
     
-    final newState = subtractResources(state, buildingCost);
+    final newPlayerResources = currentPlayerResources.subtractMultiple(buildingCost);
+    final updatedState = state.updatePlayerResources(state.currentPlayerId, newPlayerResources);
     
     updateState(ScoreService.addBuildingUpgradePoints(
-      newState.copyWith(
+      updatedState.copyWith(
         buildings: [...state.buildings, newBuilding],
         units: updatedUnits,
         selectedUnitId: consumeUnit ? null : state.selectedUnitId,
       ),
       newBuilding,
-      "player"
+      unit.ownerID
     ));
   }
 }

@@ -15,7 +15,7 @@ class CityCenter extends Building implements UnitTrainer {
     required this.unitCosts,
     int? maxHealth,
     int? currentHealth,
-    String ownerID = 'player',
+    required String ownerID,
   }) : super(
           id: id,
           type: BuildingType.cityCenter,
@@ -38,7 +38,7 @@ class CityCenter extends Building implements UnitTrainer {
         UnitType.commander: 70,
         UnitType.architect: 55,
       },
-      ownerID: '',
+      ownerID: ownerID,
     );
   }
 

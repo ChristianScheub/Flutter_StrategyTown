@@ -15,7 +15,7 @@ class Mine extends Building {
     required this.ironPerTurn,
     int? maxHealth,
     int? currentHealth,
-    String ownerID = 'player',
+    required String ownerID,
   }) : super(
           id: id,
           type: BuildingType.mine,
@@ -40,6 +40,7 @@ class Mine extends Building {
       position: position,
       stonePerTurn: stone,
       ironPerTurn: iron,
+      ownerID: ownerID,
     );
   }
 

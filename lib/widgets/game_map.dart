@@ -339,7 +339,7 @@ class _GameMapState extends State<GameMap> {
           top: screenY - effectiveTileSize / 2,
           child: GestureDetector(
             onTap: () {
-              // Check if there are multiple objects at this position
+              // Always check for multiple objects at this position first
               final objectsAtPosition = _getSelectableObjectsAt(unit.position);
               if (objectsAtPosition.length > 1) {
                 _showSelectionDialog(context, unit.position);
@@ -441,11 +441,19 @@ class _GameMapState extends State<GameMap> {
           top: screenY - effectiveTileSize / 2,
           child: GestureDetector(
             onTap: () {
+              print('Building tapped: ${building.id} at position (${building.position.x}, ${building.position.y})');
               // Check if there are multiple objects at this position
               final objectsAtPosition = _getSelectableObjectsAt(building.position);
+              print('Objects at position: ${objectsAtPosition.length}');
+              for (final obj in objectsAtPosition) {
+                print('  - ${obj['type']}: ${obj['name']} (ID: ${obj['id']})');
+              }
+              // Always handle collision detection the same way for consistency
               if (objectsAtPosition.length > 1) {
+                print('Showing selection dialog for multiple objects');
                 _showSelectionDialog(context, building.position);
               } else {
+                print('Calling onBuildingTap with building ID: ${building.id}');
                 widget.onBuildingTap(building.id);
               }
             },

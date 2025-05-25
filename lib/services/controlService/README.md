@@ -416,5 +416,140 @@ Alle Dateien implementieren die vollständige GUI-Funktionalität und bieten sow
 - `"add_ai_player <name> [id]"` - KI-Spieler hinzufügen
 - `"remove_player <id>"` - Spieler entfernen
 - `"start_new_game"` - Neues Spiel
-- `"save_game [name]"` - Speichern
-- `"load_game <key>"` - Laden
+
+## 🎮 **Mehrspielersystem (v2.0)**
+
+Das Control Service unterstützt jetzt vollständige Mehrspielerfunktionalität:
+
+### Spielertypen
+- **Menschliche Spieler**: Interaktive Kontrolle über GUI oder Terminal
+- **KI-Spieler**: Automatisierte Steuerung durch AI-Strategien
+
+### Spielerzug-Management
+```dart
+// Aktuelle Spielerinformationen
+String currentPlayer = gameController.currentPlayerId;
+bool isHuman = gameController.isCurrentPlayerHuman;
+bool isAI = gameController.isCurrentPlayerAI;
+
+// Spielerwechsel
+gameController.switchToNextPlayer();  // Nächster Spieler
+gameController.switchToPlayer("player_2");  // Bestimmter Spieler
+
+// Spielerdaten abrufen
+Map<String, int> resources = gameController.currentPlayerResources;
+List<Unit> units = gameController.currentPlayerUnits;
+List<Building> buildings = gameController.currentPlayerBuildings;
+```
+
+### Terminal-Mehrspielerbefehle
+```bash
+# Spielerwechsel
+switch_player                    # Nächster Spieler
+switch_to_player human_player_1  # Zu bestimmtem Spieler wechseln
+
+# Spielerinformationen
+get_current_player               # Aktueller Spieler
+list_all_players                 # Alle Spieler auflisten
+
+# Spielerdaten abrufen
+get_player_resources player_2    # Ressourcen eines Spielers
+get_player_units player_2        # Einheiten eines Spielers 
+get_player_buildings player_2    # Gebäude eines Spielers
+```
+
+### Spiel initialisieren:
+
+#### Einzelspieler
+```dart
+final initService = ref.read(initGameForGuiServiceProvider);
+initService.initSinglePlayerGame(
+  humanPlayerName: "Player",
+  aiPlayerName: "Computer AI"
+);
+```
+
+#### Mehrspieler
+```dart
+// Mehrere menschliche Spieler
+initService.initMultiPlayerGame(
+  playerNames: ["Alice", "Bob", "Charlie"],
+  includeAI: true,  // Optional KI-Gegner
+  aiPlayerName: "Computer"
+);
+
+// Benutzerdefiniert mit KI/Human-Mix
+initService.initCustomGame(
+  playerConfigs: [
+    PlayerConfig.human("Alice"),
+    PlayerConfig.ai("Smart AI"),
+    PlayerConfig.human("Bob"),
+    PlayerConfig.ai("Aggressive AI"),
+  ]
+);
+```
+
+### Spielerzustand im GameState
+```dart
+// Neues currentPlayerId Feld für aktiven Spieler
+class GameState {
+  final String currentPlayerId;  // "player", "human_player_1", "ai_1", etc.
+  
+  // Mehrspielermethoden
+  GameState switchToNextPlayer();
+  GameState switchToPlayer(String playerId);
+  
+  // Aktuelle Spieler-Zugriffe  
+  bool get isCurrentPlayerHuman;
+  bool get isCurrentPlayerAI;
+  Player? get currentPlayer;
+  List<Unit> get currentPlayerUnits;
+  List<Building> get currentPlayerBuildings;
+  ResourcesCollection get currentPlayerResources;
+}
+```
+
+## 🔄 **Migration von Legacy-Code**
+
+Das System ist **rückwärtskompatibel**. Legacy-Code funktioniert weiterhin:
+
+```dart
+// ALT (funktioniert weiterhin):
+List<Unit> units = gameController.playerUnits;          // Nutzt aktuellen Spieler
+Map<String, int> resources = gameController.playerResources;  // Nutzt aktuellen Spieler
+
+// NEU (explizit für Mehrspielerspiele):
+List<Unit> units = gameController.currentPlayerUnits;   // Explizit aktueller Spieler
+Map<String, int> resources = gameController.currentPlayerResources;
+```
+
+### Spiel initialisieren:
+
+#### Einzelspieler
+```dart
+final initService = ref.read(initGameForGuiServiceProvider);
+initService.initSinglePlayerGame(
+  humanPlayerName: "Player",
+  aiPlayerName: "Computer AI"
+);
+```
+
+#### Mehrspieler
+```dart
+// Mehrere menschliche Spieler
+initService.initMultiPlayerGame(
+  playerNames: ["Alice", "Bob", "Charlie"],
+  includeAI: true,  // Optional KI-Gegner
+  aiPlayerName: "Computer"
+);
+
+// Benutzerdefiniert mit KI/Human-Mix
+initService.initCustomGame(
+  playerConfigs: [
+    PlayerConfig.human("Alice"),
+    PlayerConfig.ai("Smart AI"),
+    PlayerConfig.human("Bob"),
+    PlayerConfig.ai("Aggressive AI"),
+  ]
+);
+```

@@ -25,7 +25,7 @@ class Miner extends CivilianUnit implements BuilderUnit, HarvesterUnit {
     int? currentHealth,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
-    String ownerID = 'player',
+    required String ownerID,
     this.buildingCapability,
     this.harvestingCapability,
   }) : super(
@@ -44,11 +44,12 @@ class Miner extends CivilianUnit implements BuilderUnit, HarvesterUnit {
           harvestingCapability: harvestingCapability,
         );
 
-  factory Miner.create(Position position, {int creationTurn = 0, String? ownerID}) {
+  factory Miner.create(Position position, {int creationTurn = 0, required String ownerID}) {
     return Miner(
       id: const Uuid().v4(),
       position: position,
       creationTurn: creationTurn,
+      ownerID: ownerID,
       // ownerID wird nur übergeben wenn explizit gesetzt, sonst Standardwert vom Konstruktor
       buildingCapability: BuildingCapability(
         buildableTypes: [BuildingType.mine],

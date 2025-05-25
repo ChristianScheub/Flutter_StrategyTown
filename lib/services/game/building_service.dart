@@ -32,29 +32,32 @@ class BuildingService extends BaseGameService {
 
     // Check safe distance from enemies
     final enemyBuildings = state.enemyFaction?.buildings ?? [];
-    final dummyBuilding = Building.create(buildingType, position);
+    final dummyBuilding = Building.create(buildingType, position, ownerID: state.currentPlayerId);
     if (!dummyBuilding.isWithinSafeDistance(position, enemyBuildings)) {
       return;
     }
 
-    // Check resources
+    // Check current player's resources instead of global resources
     final buildingCost = baseBuildingCosts[buildingType] ?? {};
-    if (!hasEnoughResources(buildingCost)) return;
+    final currentPlayerResources = state.getPlayerResources(state.currentPlayerId);
+    if (!currentPlayerResources.hasEnoughMultiple(buildingCost)) return;
 
-    // Create and place building
-    final newBuilding = state.createBuilding(buildingType, position);
+    // Create and place building with current player's ownerID
+    final newBuilding = state.createBuilding(buildingType, position, ownerID: state.currentPlayerId);
     final newTile = tile.copyWith(hasBuilding: true);
     state.map.setTile(newTile);
     
-    final newState = subtractResources(state, buildingCost);
+    // Update current player's resources
+    final newPlayerResources = currentPlayerResources.subtractMultiple(buildingCost);
+    final updatedState = state.updatePlayerResources(state.currentPlayerId, newPlayerResources);
     
     updateState(ScoreService.addBuildingUpgradePoints(
-      newState.copyWith(
+      updatedState.copyWith(
         buildings: [...state.buildings, newBuilding],
         buildingToBuild: null,
       ),
       newBuilding,
-      "player"
+      state.currentPlayerId
     ));
   }
 
@@ -63,18 +66,20 @@ class BuildingService extends BaseGameService {
     if (building == null) return;
     
     final upgradeCost = building.getUpgradeCost();
-    if (!hasEnoughResources(upgradeCost)) return;
+    final currentPlayerResources = state.getPlayerResources(state.currentPlayerId);
+    if (!currentPlayerResources.hasEnoughMultiple(upgradeCost)) return;
     
     final updatedBuildings = state.buildings.map((b) {
       return b.id == building.id ? b.upgrade() : b;
     }).toList();
     
-    final newState = subtractResources(state, upgradeCost);
+    final newPlayerResources = currentPlayerResources.subtractMultiple(upgradeCost);
+    final updatedState = state.updatePlayerResources(state.currentPlayerId, newPlayerResources);
     
     updateState(ScoreService.addBuildingUpgradePoints(
-      newState.copyWith(buildings: updatedBuildings),
+      updatedState.copyWith(buildings: updatedBuildings),
       building,
-      "player"
+      state.currentPlayerId
     ));
   }
 
@@ -82,7 +87,7 @@ class BuildingService extends BaseGameService {
   void buildFarm() {
     _buildWithSpecializedUnit<Farmer>(
       BuildingType.farm,
-      (position) => Farm.create(position, ownerID: "player"),
+      (position) => Farm.create(position, ownerID: state.currentPlayerId),
       consumeUnit: true
     );
   }
@@ -90,7 +95,7 @@ class BuildingService extends BaseGameService {
   void buildLumberCamp() {
     _buildWithSpecializedUnit<Lumberjack>(
       BuildingType.lumberCamp,
-      (position) => LumberCamp.create(position, ownerID: "player"),
+      (position) => LumberCamp.create(position, ownerID: state.currentPlayerId),
       consumeUnit: true
     );
   }
@@ -104,7 +109,7 @@ class BuildingService extends BaseGameService {
     
     _buildWithSpecializedUnit<Miner>(
       BuildingType.mine,
-      (position) => Mine.create(position, isIronMine: isIronMine, ownerID: "player"),
+      (position) => Mine.create(position, isIronMine: isIronMine, ownerID: state.currentPlayerId),
       consumeUnit: true
     );
   }
@@ -112,7 +117,7 @@ class BuildingService extends BaseGameService {
   void buildBarracks() {
     _buildWithSpecializedUnit<Commander>(
       BuildingType.barracks,
-      (position) => Barracks.create(position, ownerID: "player"),
+      (position) => Barracks.create(position, ownerID: state.currentPlayerId),
       actionCost: 2
     );
   }
@@ -120,7 +125,7 @@ class BuildingService extends BaseGameService {
   void buildDefensiveTower() {
     _buildWithSpecializedUnit<Architect>(
       BuildingType.defensiveTower,
-      (position) => DefensiveTower.create(position, ownerID: "player"),
+      (position) => DefensiveTower.create(position, ownerID: state.currentPlayerId),
       getActionCost: (unit) => (unit as Architect).getBuildActionCost(BuildingType.defensiveTower)
     );
   }
@@ -128,7 +133,7 @@ class BuildingService extends BaseGameService {
   void buildWall() {
     _buildWithSpecializedUnit<Architect>(
       BuildingType.wall,
-      (position) => Wall.create(position, ownerID: "player"),
+      (position) => Wall.create(position, ownerID: state.currentPlayerId),
       getActionCost: (unit) => (unit as Architect).getBuildActionCost(BuildingType.wall)
     );
   }
@@ -165,14 +170,15 @@ class BuildingService extends BaseGameService {
       return u.id == unit.id ? u.copyWith(actionsLeft: u.actionsLeft - actionCost) : u;
     }).toList();
     
-    // Update resources
-    final newResources = state.resources.add(resourceType, actualHarvest);
+    // Update current player's resources instead of global resources
+    final currentPlayerResources = state.getPlayerResources(unit.ownerID);
+    final newPlayerResources = currentPlayerResources.add(resourceType, actualHarvest);
+    final updatedState = state.updatePlayerResources(unit.ownerID, newPlayerResources);
     
-    print('Ernte: $actualHarvest ${resourceType.toString().split('.').last}');
+    print('Ernte: $actualHarvest ${resourceType.toString().split('.').last} für Spieler ${unit.ownerID}');
     
-    updateState(state.copyWith(
+    updateState(updatedState.copyWith(
       units: newUnits,
-      resources: newResources,
     ));
   }
 
@@ -213,7 +219,8 @@ class BuildingService extends BaseGameService {
     if (!builderUnit.canBuild(buildingType, tile as Tile)) return;
     
     final buildingCost = baseBuildingCosts[buildingType] ?? {};
-    if (!hasEnoughResources(buildingCost)) return;
+    final currentPlayerResources = state.getPlayerResources(state.currentPlayerId);
+    if (!currentPlayerResources.hasEnoughMultiple(buildingCost)) return;
     
     final newBuilding = createBuilding(unit.position);
     final newTile = tile.copyWith(hasBuilding: true);
@@ -229,10 +236,11 @@ class BuildingService extends BaseGameService {
       }).toList();
     }
     
-    final newState = subtractResources(state, buildingCost);
+    final newPlayerResources = currentPlayerResources.subtractMultiple(buildingCost);
+    final updatedState = state.updatePlayerResources(state.currentPlayerId, newPlayerResources);
     
     updateState(ScoreService.addBuildingUpgradePoints(
-      newState.copyWith(
+      updatedState.copyWith(
         buildings: [...state.buildings, newBuilding],
         units: updatedUnits,
         selectedUnitId: consumeUnit ? null : state.selectedUnitId,

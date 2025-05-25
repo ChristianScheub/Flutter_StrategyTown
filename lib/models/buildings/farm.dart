@@ -13,7 +13,7 @@ class Farm extends Building {
     required this.foodPerTurn,
     int? maxHealth,
     int? currentHealth,
-    String ownerID = 'player',
+    required String ownerID,
   }) : super(
           id: id,
           type: BuildingType.farm,
@@ -24,7 +24,7 @@ class Farm extends Building {
           ownerID: ownerID,
         );
 
-  factory Farm.create(Position position, {Map<ResourceType, int>? productionValues, String ownerID = 'player'}) {
+  factory Farm.create(Position position, {Map<ResourceType, int>? productionValues, required String ownerID}) {
     final food = productionValues != null && productionValues.containsKey(ResourceType.food)
         ? productionValues[ResourceType.food]!
         : (baseProductionValues[BuildingType.farm]?[ResourceType.food] ?? 10);

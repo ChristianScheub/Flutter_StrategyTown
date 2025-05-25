@@ -13,7 +13,7 @@ class LumberCamp extends Building {
     required this.woodPerTurn,
     int? maxHealth,
     int? currentHealth,
-    String ownerID = 'player',
+    required String ownerID,
   }) : super(
           id: id,
           type: BuildingType.lumberCamp,
@@ -32,6 +32,7 @@ class LumberCamp extends Building {
       id: const Uuid().v4(),
       position: position,
       woodPerTurn: wood,
+      ownerID: ownerID,
     );
   }
 

@@ -119,28 +119,3 @@ final gameScreenMigrationHelperProvider = Provider<GameScreenMigrationHelper>((r
   return GameScreenMigrationHelper(ref);
 });
 
-/// Beispiel für schrittweise Migration:
-/// 
-/// Schritt 1: Import hinzufügen
-/// ```dart
-/// import 'package:flutter_sim_city/services/controlService/control_service.dart';
-/// ```
-/// 
-/// Schritt 2: Migration Helper verwenden
-/// ```dart
-/// class _GameScreenState extends ConsumerState<GameScreen> {
-///   @override
-///   Widget build(BuildContext context) {
-///     final migrationHelper = ref.read(gameScreenMigrationHelperProvider);
-///     final gameState = migrationHelper.gameController.currentGameState;
-///     
-///     // ... Rest der Widget-Struktur bleibt gleich
-///     
-///     onTileTap: (position) {
-///       migrationHelper.selectTile(position); // Statt ref.read(gameStateProvider.notifier)
-///     },
-///   }
-/// }
-/// ```
-/// 
-/// Schritt 3: Nach erfolgreicher Migration komplett auf GameController umstellen

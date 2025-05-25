@@ -25,7 +25,7 @@ class Lumberjack extends CivilianUnit implements BuilderUnit, HarvesterUnit {
     int? currentHealth,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
-    String ownerID = 'player',
+    required String ownerID,
     this.harvestingCapability,
     this.buildingCapability,
   }) : super(
@@ -49,6 +49,7 @@ class Lumberjack extends CivilianUnit implements BuilderUnit, HarvesterUnit {
       id: const Uuid().v4(),
       position: position,
       creationTurn: creationTurn,
+      ownerID: ownerID,
       buildingCapability: BuildingCapability(
         buildableTypes: [BuildingType.lumberCamp],
         actionCosts: {BuildingType.lumberCamp: 2},

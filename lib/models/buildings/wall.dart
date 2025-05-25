@@ -14,7 +14,7 @@ class Wall extends Building {
     required int level,
     this.currentHealth = baseHealth,
     this.maxHealth = baseHealth,
-    String ownerID = 'player',
+    required String ownerID,
   }) : super(
           id: id,
           type: BuildingType.wall,
@@ -28,6 +28,7 @@ class Wall extends Building {
       id: const Uuid().v4(),
       position: position,
       level: 1,
+      ownerID: ownerID,
     );
   }
 

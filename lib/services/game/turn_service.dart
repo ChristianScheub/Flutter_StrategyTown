@@ -11,8 +11,8 @@ class TurnService extends BaseGameService {
 
   void nextTurn() {
     // Capture initial state for notifications
-    final initialPlayerUnits = state.units.length;
-    final initialPlayerBuildings = state.buildings.length;
+    final initialPlayerUnits = state.currentPlayerUnits.length;
+    final initialPlayerBuildings = state.currentPlayerBuildings.length;
     final initialEnemyFaction = state.enemyFaction;
     final initialEnemyUnits = initialEnemyFaction?.units.length ?? 0;
     final initialEnemyBuildings = initialEnemyFaction?.buildings.length ?? 0;
@@ -20,7 +20,8 @@ class TurnService extends BaseGameService {
     // Process defensive tower attacks
     var updatedState = _processDefensiveTowerAttacks(state);
     
-    // End player turn
+    // Process turn - with multiplayer mode always on, we don't automatically switch players
+    // Players will be switched manually via UI controls
     updatedState = updatedState.nextTurn();
     
     // Calculate AI difficulty scaling

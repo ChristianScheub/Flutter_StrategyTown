@@ -19,6 +19,26 @@ class PlayerManager {
     return PlayerManager(players: {defaultPlayer.id: defaultPlayer});
   }
 
+  /// Factory mit Standard-Spieler und KI
+  factory PlayerManager.withDefaultPlayersAndAI() {
+    final humanPlayer = Player.human(
+      id: 'player',
+      name: 'Player',
+      resources: ResourcesCollection.initial(),
+    );
+    
+    final aiPlayer = Player.ai(
+      id: 'ai_player',
+      name: 'AI Opponent',
+      resources: ResourcesCollection.initial(),
+    );
+    
+    return PlayerManager(players: {
+      humanPlayer.id: humanPlayer,
+      aiPlayer.id: aiPlayer,
+    });
+  }
+
   /// Alle Spieler als Map
   Map<String, Player> get players => Map.unmodifiable(_players);
 
@@ -49,8 +69,8 @@ class PlayerManager {
   /// Anzahl KI-Spieler
   int get aiPlayerCount => aiPlayers.length;
 
-  /// Ist Mehrspieler-Spiel
-  bool get isMultiplayer => playerCount > 1;
+  /// Ist Mehrspieler-Spiel - immer true, da wir nun stets im Mehrspielermodus sind
+  bool get isMultiplayer => true;
 
   /// Spieler-IDs
   List<String> get playerIds => _players.keys.toList();

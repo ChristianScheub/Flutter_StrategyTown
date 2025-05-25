@@ -16,7 +16,7 @@ class VirtualUnit extends MilitaryUnit {
     required CombatCapability combatCapability,
     int creationTurn = 0,
     bool hasBuiltSomething = false,
-    String ownerID = 'player',
+    required String ownerID,
   }) : super(
           id: id,
           type: UnitType.virtualTower,
@@ -27,6 +27,7 @@ class VirtualUnit extends MilitaryUnit {
           combatCapability: combatCapability,
           creationTurn: creationTurn,
           hasBuiltSomething: hasBuiltSomething,
+          ownerID: ownerID,
         );
 
   @override

@@ -18,7 +18,7 @@ import 'package:flutter_sim_city/models/units/capabilities/combat_capability.dar
 /// Einheitentypen zu zentralisieren und zu vereinfachen.
 class UnitFactory {
   /// Erstellt eine neue Einheit des angegebenen Typs an der angegebenen Position
-  static Unit createUnit(UnitType type, Position position, {int currentTurn = 0, String ownerID = 'player'}) {
+  static Unit createUnit(UnitType type, Position position, {int currentTurn = 0, required String ownerID}) {
     switch (type) {
       case UnitType.settler:
         return Settler.create(position, creationTurn: currentTurn, ownerID: ownerID);
@@ -110,6 +110,7 @@ class UnitFactory {
     
     // Handle virtual tower units specially
     if (unitType == UnitType.virtualTower) {
+      final ownerID = json['ownerID'] as String? ?? 'human_player_1';
       // Import the VirtualUnit class from the proper location
       return VirtualUnit(
         id: json['id'],
@@ -125,11 +126,13 @@ class UnitFactory {
         ),
         creationTurn: json['creationTurn'] ?? 0,
         hasBuiltSomething: json['hasBuiltSomething'] ?? false,
+        ownerID: ownerID,
       );
     }
     
     // Create a new unit of the right type and then update its properties
-    final unit = createUnit(unitType, position);
+    final ownerID = json['ownerID'] as String? ?? 'human_player_1'; // Fallback to first human player if missing
+    final unit = createUnit(unitType, position, ownerID: ownerID);
     
     // Identify the correct unit type and update properties
     switch (unitType) {

@@ -2,12 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_sim_city/models/units/unit_abilities.dart';
 import 'package:flutter_sim_city/models/units/civilian/unit_base_classes.dart';
 import 'package:flutter_sim_city/models/units/civilian/farmer.dart';
-import 'package:flutter_sim_city/models/units/civilian/lumberjack.dart';
 import 'package:flutter_sim_city/models/units/civilian/miner.dart';
 import 'package:flutter_sim_city/models/units/civilian/settler.dart';
-import 'package:flutter_sim_city/models/units/military/archer.dart';
-import 'package:flutter_sim_city/models/units/military/knight.dart';
-import 'package:flutter_sim_city/models/units/military/soldier_troop.dart';
 import 'package:flutter_sim_city/models/map/position.dart';
 import 'package:flutter_sim_city/models/map/tile.dart';
 import 'package:flutter_sim_city/models/buildings/building.dart';
@@ -16,7 +12,7 @@ import 'package:flutter_sim_city/models/resource/resource.dart';
 void main() {
   group('Unit Abilities Tests', () {
     test('Farmer implements BuilderUnit and HarvesterUnit interfaces', () {
-      final farmer = Farmer.create(Position(x: 0, y: 0));
+      final farmer = Farmer.create(Position(x: 0, y: 0), ownerID: 'test_player');
       
       expect(farmer is BuilderUnit, true);
       expect(farmer is HarvesterUnit, true);
@@ -26,7 +22,7 @@ void main() {
     
     
     test('Miner implements BuilderUnit and HarvesterUnit interfaces', () {
-      final miner = Miner.create(Position(x: 0, y: 0));
+      final miner = Miner.create(Position(x: 0, y: 0), ownerID: 'test_player');
       
       expect(miner is BuilderUnit, true);
       expect(miner is HarvesterUnit, true);
@@ -35,7 +31,7 @@ void main() {
     });
     
     test('Settler implements SettlerCapable interface', () {
-      final settler = Settler.create(Position(x: 0, y: 0));
+      final settler = Settler.create(Position(x: 0, y: 0), ownerID: 'test_player');
       
       expect(settler is SettlerCapable, true);
       expect(settler is CivilianUnit, true);
@@ -44,7 +40,7 @@ void main() {
     
     
     test('Miner can only build mines', () {
-      final miner = Miner.create(Position(x: 0, y: 0));
+      final miner = Miner.create(Position(x: 0, y: 0), ownerID: 'test_player');
       final tile = Tile(
         position: Position(x: 0, y: 0),
         type: TileType.mountain,
@@ -59,7 +55,7 @@ void main() {
     });
     
     test('Farmer can only build farms', () {
-      final farmer = Farmer.create(Position(x: 0, y: 0));
+      final farmer = Farmer.create(Position(x: 0, y: 0), ownerID: 'test_player');
       final tile = Tile(
         position: Position(x: 0, y: 0),
         type: TileType.grass,

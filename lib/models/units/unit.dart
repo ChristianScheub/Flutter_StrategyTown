@@ -54,7 +54,7 @@ abstract class Unit extends Equatable {
     this.combatCapability,
     this.harvestingCapability,
     this.buildingCapability,
-    this.ownerID = 'player', // Default owner is the player
+    required this.ownerID,
     this.creationTurn = 0,
     this.hasBuiltSomething = false,
   });
@@ -208,7 +208,7 @@ abstract class Unit extends Equatable {
       'maxHealth': json['maxHealth'],
       'currentHealth': json['currentHealth'],
       'isCombatUnit': json['isCombatUnit'],
-      'ownerID': json['ownerID'] ?? 'player', // Default to player if not specified
+      'ownerID': json['ownerID'] ?? 'human_player_1', // Default to first human player if not specified
     };
   }
 }

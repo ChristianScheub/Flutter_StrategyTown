@@ -23,7 +23,7 @@ class Architect extends CivilianUnit implements BuilderUnit {
     int creationTurn = 0,
     bool hasBuiltSomething = false,
     this.buildingCapability,
-    String ownerID = 'player',
+    required String ownerID,
   }) : super(
           id: id,
           type: UnitType.architect,
@@ -36,6 +36,7 @@ class Architect extends CivilianUnit implements BuilderUnit {
           creationTurn: creationTurn,
           hasBuiltSomething: hasBuiltSomething,
           buildingCapability: buildingCapability,
+          ownerID: ownerID,
         );
 
   factory Architect.create(Position position, {int creationTurn = 0, required String ownerID}) {
@@ -43,6 +44,7 @@ class Architect extends CivilianUnit implements BuilderUnit {
       id: const Uuid().v4(),
       position: position,
       creationTurn: creationTurn,
+      ownerID: ownerID,
       buildingCapability: BuildingCapability(
         buildableTypes: [BuildingType.defensiveTower, BuildingType.wall],
         actionCosts: {

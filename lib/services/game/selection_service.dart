@@ -80,6 +80,16 @@ class SelectionService extends BaseGameService {
     updateState(state.copyWith(unitToTrain: type));
   }
 
+  void selectUnitForDetails(String unitId) {
+    updateState(state.copyWith(
+      selectedUnitId: unitId,
+      selectedBuildingId: null,
+      selectedTilePosition: null,
+      buildingToBuild: null,
+      unitToTrain: null,
+    ));
+  }
+
   void _handleAttack(Position targetPosition) {
     final unit = selectedUnit;
     if (unit == null || !CombatHelper.canAttackEnemyAt(state, unit, targetPosition)) {

@@ -25,7 +25,7 @@ final gameStateProvider = StateNotifierProvider<GameStateNotifier, GameState>(
 );
 
 class GameStateNotifier extends StateNotifier<GameState> {
-  GameStateNotifier(this.ref) : super(GameState.initial()) {
+  GameStateNotifier(this.ref) : super(GameState.empty()) {
     _initializeServices();
   }
 
@@ -73,6 +73,7 @@ class GameStateNotifier extends StateNotifier<GameState> {
   void moveCamera(Position newPosition) => _cameraService.moveCamera(newPosition);
   void jumpToFirstCity() => _cameraService.jumpToFirstCity();
   void jumpToEnemyHeadquarters() => _cameraService.jumpToEnemyHeadquarters();
+  void jumpToFirstSettler() => _cameraService.jumpToFirstSettler();
   
   void selectUnit(String unitId) => _selectionService.selectUnit(unitId);
   void selectBuilding(String buildingId) => _selectionService.selectBuilding(buildingId);
@@ -99,7 +100,7 @@ class GameStateNotifier extends StateNotifier<GameState> {
     final tile = state.map.getTile(unit.position);
     if (!tile.canBuildOn) return;
     
-    final cityCenter = state.createBuilding(BuildingType.cityCenter, unit.position);
+    final cityCenter = state.createBuilding(BuildingType.cityCenter, unit.position, ownerID: unit.ownerID);
     final newTile = tile.copyWith(hasBuilding: true);
     state.map.setTile(newTile);
     
@@ -125,4 +126,6 @@ class GameStateNotifier extends StateNotifier<GameState> {
   void buildBarracks() => _buildingService.buildBarracks();
   void buildDefensiveTower() => _buildingService.buildDefensiveTower();
   void buildWall() => _buildingService.buildWall();
+
+  void selectUnitForDetails(String unitId) => _selectionService.selectUnitForDetails(unitId);
 }
