@@ -16,6 +16,27 @@ class TerminalGameInterface {
   
   GameController get _gameController => _ref.read(gameControllerProvider);
   
+  // === Helper Methoden zum Parsen von Typen ===
+  BuildingType? _parseBuildingType(String buildingTypeStr) {
+    try {
+      return BuildingType.values.firstWhere(
+        (e) => e.toString().split('.').last.toLowerCase() == buildingTypeStr.toLowerCase()
+      );
+    } catch (e) {
+      return null; // Ungültiger Gebäudetyp
+    }
+  }
+
+  UnitType? _parseUnitType(String unitTypeStr) {
+    try {
+      return UnitType.values.firstWhere(
+        (e) => e.toString().split('.').last.toLowerCase() == unitTypeStr.toLowerCase()
+      );
+    } catch (e) {
+      return null; // Ungültiger Einheitentyp
+    }
+  }
+  
   // === Spiel-Informationen ===
   
   /// Gibt den aktuellen Spielzustand als String zurück
