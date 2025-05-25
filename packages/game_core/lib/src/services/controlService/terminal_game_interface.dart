@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:game_core/src/models/buildings/building.dart';
 import 'package:game_core/src/models/map/tile.dart';
 import 'package:game_core/src/models/resource/resource.dart';
@@ -291,6 +291,43 @@ MULTIPLAYER COMMANDS:
   String buildWall() {
     final success = _gameController.buildWall();
     return success ? "Wall build action initiated" : "Failed to initiate wall building";
+  }
+  
+  /// Schnell-Bau-Aktionen mit spezifischer Einheit
+  String buildFarmWithUnit(String unitId, int x, int y) {
+    final position = Position(x: x, y: y);
+    final success = _gameController.buildFarmWithUnit(unitId, position);
+    return success ? "Farm wurde mit Einheit $unitId gebaut" : "Farm konnte nicht gebaut werden";
+  }
+  
+  String buildLumberCampWithUnit(String unitId, int x, int y) {
+    final position = Position(x: x, y: y);
+    final success = _gameController.buildLumberCampWithUnit(unitId, position);
+    return success ? "Holzfällerlager wurde mit Einheit $unitId gebaut" : "Holzfällerlager konnte nicht gebaut werden";
+  }
+  
+  String buildMineWithUnit(String unitId, int x, int y) {
+    final position = Position(x: x, y: y);
+    final success = _gameController.buildMineWithUnit(unitId, position);
+    return success ? "Mine wurde mit Einheit $unitId gebaut" : "Mine konnte nicht gebaut werden";
+  }
+  
+  String buildBarracksWithUnit(String unitId, int x, int y) {
+    final position = Position(x: x, y: y);
+    final success = _gameController.buildBarracksWithUnit(unitId, position);
+    return success ? "Kaserne wurde mit Einheit $unitId gebaut" : "Kaserne konnte nicht gebaut werden";
+  }
+  
+  String buildDefensiveTowerWithUnit(String unitId, int x, int y) {
+    final position = Position(x: x, y: y);
+    final success = _gameController.buildDefensiveTowerWithUnit(unitId, position);
+    return success ? "Verteidigungsturm wurde mit Einheit $unitId gebaut" : "Verteidigungsturm konnte nicht gebaut werden";
+  }
+
+  String buildWallWithUnit(String unitId, int x, int y) {
+    final position = Position(x: x, y: y);
+    final success = _gameController.buildWallWithUnit(unitId, position);
+    return success ? "Mauer wurde mit Einheit $unitId gebaut" : "Mauer konnte nicht gebaut werden";
   }
   
   /// Wählt einen Gebäudetyp zum Bauen aus

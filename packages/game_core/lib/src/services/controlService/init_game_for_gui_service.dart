@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:collection/collection.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:game_core/src/models/map/tile.dart'; // Added for TileType
 import 'package:game_core/src/models/units/unit.dart';
 import 'package:game_core/src/models/units/unit_factory.dart';
@@ -8,7 +8,6 @@ import 'package:game_core/src/models/map/position.dart';
 import 'package:game_core/src/services/controlService/game_controller.dart';
 import 'package:game_core/src/services/game/game_state_notifier.dart';
 import 'package:game_core/game_core.dart';
-import 'package:riverpod/riverpod.dart';
 
 /// Service zur Initialisierung von Spielen für die GUI
 /// Stellt vorkonfigurierte Spielsetups zur Verfügung

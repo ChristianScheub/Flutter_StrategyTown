@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:game_core/src/models/game/game_state.dart';
 import 'package:game_core/src/models/buildings/building.dart';
 import 'package:game_core/src/models/units/unit.dart';
@@ -233,6 +233,71 @@ class GameController {
   /// Startet ein neues Spiel
   void startNewGame() {
     _gameStateService.startNewGame();
+  }
+  
+  /// Baut ein Gebäude mit einer bestimmten Einheit
+  bool buildWithUnit(String unitId, BuildingType buildingType, Position position) {
+    try {
+      // Wähle die Einheit aus
+      selectUnit(unitId);
+      
+      // Wähle die Position aus
+      selectTile(position);
+      
+      // Wende die entsprechende spezialisierte Baumethode an
+      // Diese Methoden prüfen intern bereits, ob die gewählte Einheit vom korrekten Typ ist
+      switch (buildingType) {
+        case BuildingType.farm:
+          return buildFarm();
+        case BuildingType.lumberCamp:
+          return buildLumberCamp();
+        case BuildingType.mine:
+          return buildMine();
+        case BuildingType.barracks:
+          return buildBarracks();
+        case BuildingType.defensiveTower:
+          return buildDefensiveTower();
+        case BuildingType.wall:
+          return buildWall();
+        default:
+          // Für andere Gebäudetypen verwenden wir die allgemeine Methode
+          selectBuildingToBuild(buildingType);
+          return buildBuildingAtPosition(position);
+      }
+    } catch (e) {
+      print('Fehler beim Bauen des Gebäudes: $e');
+      return false;
+    }
+  }
+  
+  /// Baut Farm mit einer spezifischen Farmer-Einheit
+  bool buildFarmWithUnit(String unitId, Position position) {
+    return buildWithUnit(unitId, BuildingType.farm, position);
+  }
+  
+  /// Baut Holzfällerlager mit einer spezifischen Holzfäller-Einheit
+  bool buildLumberCampWithUnit(String unitId, Position position) {
+    return buildWithUnit(unitId, BuildingType.lumberCamp, position);
+  }
+  
+  /// Baut Mine mit einer spezifischen Bergarbeiter-Einheit
+  bool buildMineWithUnit(String unitId, Position position) {
+    return buildWithUnit(unitId, BuildingType.mine, position);
+  }
+  
+  /// Baut Kaserne mit einer spezifischen Kommandeur-Einheit
+  bool buildBarracksWithUnit(String unitId, Position position) {
+    return buildWithUnit(unitId, BuildingType.barracks, position);
+  }
+  
+  /// Baut Verteidigungsturm mit einer spezifischen Architekt-Einheit
+  bool buildDefensiveTowerWithUnit(String unitId, Position position) {
+    return buildWithUnit(unitId, BuildingType.defensiveTower, position);
+  }
+  
+  /// Baut Mauer mit einer spezifischen Architekt-Einheit
+  bool buildWallWithUnit(String unitId, Position position) {
+    return buildWithUnit(unitId, BuildingType.wall, position);
   }
 }
 

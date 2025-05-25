@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:game_core/game_core.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -48,6 +48,7 @@ class GameApiService {
     router.get('/units/<playerId>', _getPlayerUnits);
     router.post('/units/select/<unitId>', _selectUnit);
     router.post('/units/move/<unitId>/<x>/<y>', _moveUnit);
+    router.post('/units/move-from-position/<fromX>/<fromY>/<toX>/<toY>', _moveUnitAtPosition);
     router.post('/units/attack/<unitId>/<targetX>/<targetY>', _attack);
     router.post('/units/harvest', _harvestResource);
     
@@ -59,13 +60,16 @@ class GameApiService {
     router.post('/buildings/build/<type>/<x>/<y>', _buildBuilding);
     router.post('/buildings/build-at-position/<x>/<y>', _buildBuildingAtPosition);
     
+    // === Building with Specific Units ===
+    router.post('/buildings/build-with-unit/<unitId>/<typeStr>/<x>/<y>', _buildWithSpecificUnit);
+    
     // === Quick Build Actions ===
-    router.post('/quick-build/farm', _buildFarm);
-    router.post('/quick-build/lumber-camp', _buildLumberCamp);
-    router.post('/quick-build/mine', _buildMine);
-    router.post('/quick-build/barracks', _buildBarracks);
-    router.post('/quick-build/defensive-tower', _buildDefensiveTower);
-    router.post('/quick-build/wall', _buildWall);
+    router.post('/quick-build/farm/<unitId>', _buildFarm);
+    router.post('/quick-build/lumber-camp/<unitId>', _buildLumberCamp);
+    router.post('/quick-build/mine/<unitId>', _buildMine);
+    router.post('/quick-build/barracks/<unitId>', _buildBarracks);
+    router.post('/quick-build/defensive-tower/<unitId>', _buildDefensiveTower);
+    router.post('/quick-build/wall/<unitId>', _buildWall);
     
     // === Training Units ===
     router.post('/train-unit/<unitType>/<buildingId>', _trainUnit);
@@ -172,8 +176,26 @@ class GameApiService {
   }
   
   Response _selectUnit(Request request, String unitId) {
-    final result = gameInterface.selectUnit(unitId);
-    return _successResponse(result);
+    try {
+      // Get the game controller and state to check if unit exists
+      final gameController = container.read(gameControllerProvider);
+      final gameState = gameController.currentGameState;
+      
+      // Check if the unit exists
+      final unit = gameState.units.where((u) => u.id == unitId).toList();
+      if (unit.isEmpty) {
+        return _errorResponse(
+          'Unit $unitId does not exist. It may have been consumed in a previous action.',
+          404
+        );
+      }
+      
+      // If unit exists, try to select it
+      final result = gameInterface.selectUnit(unitId);
+      return _successResponse(result);
+    } catch (e) {
+      return _errorResponse('Error selecting unit: $e');
+    }
   }
   
   Response _moveUnit(Request request, String unitId, String xStr, String yStr) {
@@ -246,56 +268,551 @@ class GameApiService {
     }
   }
   
+  // === Building with Specific Units ===
+  Response _buildWithSpecificUnit(Request request, String unitId, String typeStr, String xStr, String yStr) {
+    try {
+      final x = int.parse(xStr);
+      final y = int.parse(yStr);
+      final position = Position(x: x, y: y);
+      
+      // Get the game controller
+      final gameController = container.read(gameControllerProvider);
+      final gameState = gameController.currentGameState;
+      
+      // First check if the unit exists
+      final unit = gameState.units.where((u) => u.id == unitId).toList();
+      if (unit.isEmpty) {
+        return _errorResponse(
+          'Unit $unitId does not exist. It may have been consumed in a previous action.',
+          404
+        );
+      }
+      
+      // Convert the type string to a BuildingType
+      BuildingType? buildingType;
+      for (final bType in BuildingType.values) {
+        if (bType.toString().split('.').last.toLowerCase() == typeStr.toLowerCase()) {
+          buildingType = bType;
+          break;
+        }
+      }
+      
+      if (buildingType == null) {
+        return _errorResponse('Unknown building type: $typeStr');
+      }
+      
+      // First select the unit
+      gameController.selectUnit(unitId);
+      
+      // Then select the tile
+      gameController.selectTile(position);
+      
+      // Use specialized building methods based on type
+      bool success = false;
+      switch (buildingType) {
+        case BuildingType.farm:
+          success = gameController.buildFarm();
+          break;
+        case BuildingType.lumberCamp:
+          success = gameController.buildLumberCamp();
+          break;
+        case BuildingType.mine:
+          success = gameController.buildMine();
+          break;
+        case BuildingType.barracks:
+          success = gameController.buildBarracks();
+          break;
+        case BuildingType.defensiveTower:
+          success = gameController.buildDefensiveTower();
+          break;
+        case BuildingType.wall:
+          success = gameController.buildWall();
+          break;
+        default:
+          // For other types use the general method
+          gameController.selectBuildingToBuild(buildingType);
+          success = gameController.buildBuildingAtPosition(position);
+      }
+      
+      if (success) {
+        return _successResponse('Building $typeStr successfully built with unit $unitId at ($x, $y)');
+      } else {
+        return _errorResponse(
+          'Failed to build $typeStr with unit $unitId at ($x, $y). ' +
+          'Make sure the selected unit can build that structure at that position and has enough resources.'
+        );
+      }
+    } catch (e) {
+      return _errorResponse('Error building with unit: $e');
+    }
+  }
+  
   // === Quick Build Actions ===
-  Response _buildFarm(Request request) {
-    final result = gameInterface.buildFarm();
-    return _successResponse(result);
+  Response _buildFarm(Request request, String unitId) {
+    try {
+      // Get the game controller
+      final gameController = container.read(gameControllerProvider);
+      final gameState = gameController.currentGameState;
+      
+      // First check if the unit exists
+      final unit = gameState.units.where((u) => u.id == unitId).toList();
+      if (unit.isEmpty) {
+        return _errorResponse(
+          'Unit $unitId does not exist. It may have been consumed in a previous action.',
+          404
+        );
+      }
+      
+      // Check if the unit is a Farmer
+      if (unit.first.type != UnitType.farmer) {
+        return _errorResponse(
+          'Unit $unitId is not a Farmer. Only Farmers can build farms.',
+          400
+        );
+      }
+      
+      // Check if player has enough resources
+      final currentPlayer = gameState.currentPlayerId;
+      final playerResources = gameState.getPlayerResources(currentPlayer);
+      final buildingCost = baseBuildingCosts[BuildingType.farm] ?? {};
+      
+      // Check for sufficient resources
+      if (!playerResources.hasEnoughMultiple(buildingCost)) {
+        final requiredResources = {};
+        buildingCost.forEach((resource, amount) {
+          requiredResources[resource] = amount;
+        });
+        
+        return _errorResponse(
+          'Insufficient resources to build a farm. Required: ${requiredResources}',
+          400
+        );
+      }
+      
+      // Count buildings before building
+      final buildingCountBefore = gameState.buildings.where((b) => 
+          b.ownerID == currentPlayer && b.type == BuildingType.farm).length;
+      
+      // First select the unit
+      gameController.selectUnit(unitId);
+      
+      // Then try to build a farm
+      gameController.buildFarm();
+      
+      // Verify that a building was actually created
+      final updatedGameState = gameController.currentGameState;
+      final buildingCountAfter = updatedGameState.buildings.where((b) => 
+          b.ownerID == currentPlayer && b.type == BuildingType.farm).length;
+      
+      if (buildingCountAfter > buildingCountBefore) {
+        return _successResponse('Farm built successfully with unit $unitId');
+      } else {
+        return _errorResponse(
+          'Failed to build farm with unit $unitId. ' + 
+          'This could be due to insufficient action points or unsuitable terrain.',
+          400
+        );
+      }
+    } catch (e) {
+      return _errorResponse('Error building farm: $e');
+    }
   }
   
-  Response _buildLumberCamp(Request request) {
-    final result = gameInterface.buildLumberCamp();
-    return _successResponse(result);
+  Response _buildLumberCamp(Request request, String unitId) {
+    try {
+      // Get the game controller
+      final gameController = container.read(gameControllerProvider);
+      final gameState = gameController.currentGameState;
+      
+      // First check if the unit exists
+      final unit = gameState.units.where((u) => u.id == unitId).toList();
+      if (unit.isEmpty) {
+        return _errorResponse(
+          'Unit $unitId does not exist. It may have been consumed in a previous action.',
+          404
+        );
+      }
+      
+      // First select the unit
+      gameController.selectUnit(unitId);
+      
+      // Then try to build a lumber camp
+      final success = gameController.buildLumberCamp();
+      
+      if (success) {
+        return _successResponse('Lumber camp built successfully with unit $unitId');
+      } else {
+        return _errorResponse(
+          'Failed to build lumber camp with unit $unitId. ' + 
+          'Make sure the unit is a Lumberjack and has enough resources.'
+        );
+      }
+    } catch (e) {
+      return _errorResponse('Error building lumber camp: $e');
+    }
   }
   
-  Response _buildMine(Request request) {
-    final result = gameInterface.buildMine();
-    return _successResponse(result);
+  Response _buildMine(Request request, String unitId) {
+    try {
+      // Get the game controller
+      final gameController = container.read(gameControllerProvider);
+      
+      // First select the unit
+      gameController.selectUnit(unitId);
+      
+      // Then try to build a mine
+      final success = gameController.buildMine();
+      
+      if (success) {
+        return _successResponse('Mine built successfully with unit $unitId');
+      } else {
+        return _errorResponse(
+          'Failed to build mine with unit $unitId. ' + 
+          'Make sure the unit is a Miner and has enough resources.'
+        );
+      }
+    } catch (e) {
+      return _errorResponse('Error building mine: $e');
+    }
   }
   
-  Response _buildBarracks(Request request) {
-    final result = gameInterface.buildBarracks();
-    return _successResponse(result);
+  Response _buildBarracks(Request request, String unitId) {
+    try {
+      // Get the game controller
+      final gameController = container.read(gameControllerProvider);
+      
+      // First select the unit
+      gameController.selectUnit(unitId);
+      
+      // Then try to build barracks
+      final success = gameController.buildBarracks();
+      
+      if (success) {
+        return _successResponse('Barracks built successfullywith unit $unitId');
+      } else {
+        return _errorResponse(
+          'Failed to build barracks with unit $unitId. ' + 
+          'Make sure the unit is a Commander and has enough resources.'
+        );
+      }
+    } catch (e) {
+      return _errorResponse('Error building barracks: $e');
+    }
   }
   
-  Response _buildDefensiveTower(Request request) {
-    final result = gameInterface.buildDefensiveTower();
-    return _successResponse(result);
+  Response _buildDefensiveTower(Request request, String unitId) {
+    try {
+      // Get the game controller
+      final gameController = container.read(gameControllerProvider);
+      
+      // First select the unit
+      gameController.selectUnit(unitId);
+      
+      // Then try to build a defensive tower
+      final success = gameController.buildDefensiveTower();
+      
+      if (success) {
+        return _successResponse('Defensive tower built successfully with unit $unitId');
+      } else {
+        return _errorResponse(
+          'Failed to build defensive tower with unit $unitId. ' + 
+          'Make sure the unit is an Architect and has enough resources.'
+        );
+      }
+    } catch (e) {
+      return _errorResponse('Error building defensive tower: $e');
+    }
   }
   
-  Response _buildWall(Request request) {
-    final result = gameInterface.buildWall();
-    return _successResponse(result);
+  Response _buildWall(Request request, String unitId) {
+    try {
+      // Get the game controller
+      final gameController = container.read(gameControllerProvider);
+      
+      // First select the unit
+      gameController.selectUnit(unitId);
+      
+      // Then try to build a wall
+      final success = gameController.buildWall();
+      
+      if (success) {
+        return _successResponse('Wall built successfully with unit $unitId');
+      } else {
+        return _errorResponse(
+          'Failed to build wall with unit $unitId. ' + 
+          'Make sure the unit is an Architect and has enough resources.'
+        );
+      }
+    } catch (e) {
+      return _errorResponse('Error building wall: $e');
+    }
   }
   
   // === Training Units ===
   Response _trainUnit(Request request, String unitType, String buildingId) {
-    final result = gameInterface.trainUnit(unitType, buildingId);
-    return _successResponse(result);
+    try {
+      // Get the game controller
+      final gameController = container.read(gameControllerProvider);
+      final gameState = gameController.currentGameState;
+      
+      // First check if the building exists
+      final building = gameState.buildings.where((b) => b.id == buildingId).toList();
+      if (building.isEmpty) {
+        return _errorResponse(
+          'Building $buildingId does not exist.',
+          404
+        );
+      }
+      
+      // Convert string unitType to UnitType enum
+      UnitType? type;
+      for (final uType in UnitType.values) {
+        if (uType.toString().split('.').last.toLowerCase() == unitType.toLowerCase()) {
+          type = uType;
+          break;
+        }
+      }
+      
+      if (type == null) {
+        return _errorResponse('Unknown unit type: $unitType');
+      }
+      
+      // Check if player has enough resources before attempting to train
+      final currentPlayer = gameState.currentPlayerId;
+      final playerResources = gameState.getPlayerResources(currentPlayer);
+      final unitCost = getUnitCosts(type);
+      
+      // Check for sufficient resources
+      if (!playerResources.hasEnoughMultiple(unitCost)) {
+        final requiredResources = {};
+        unitCost.forEach((resource, amount) {
+          requiredResources[resource] = amount;
+        });
+        
+        return _errorResponse(
+          'Insufficient resources to train $unitType. Required: ${requiredResources}',
+          400
+        );
+      }
+      
+      // First select the building
+      gameController.selectBuilding(buildingId);
+      
+      // Check if the selected building can train this unit type
+      final canTrain = canBuildingTrainUnitType(building.first, type);
+      if (!canTrain) {
+        return _errorResponse(
+          'Building ${building.first.displayName} cannot train unit of type $unitType',
+          400
+        );
+      }
+      
+      // Try to train the unit
+      final unitCountBefore = gameState.units.where((u) => u.ownerID == currentPlayer).length;
+      
+      // Then try to train the unit
+      gameController.trainUnitGeneric(type);
+      
+      // Verify that a unit was actually created by checking the unit count after training
+      final updatedGameState = gameController.currentGameState;
+      final unitCountAfter = updatedGameState.units.where((u) => u.ownerID == currentPlayer).length;
+      
+      if (unitCountAfter > unitCountBefore) {
+        return _successResponse('$unitType trained successfully in building $buildingId');
+      } else {
+        return _errorResponse(
+          'Failed to train $unitType in building $buildingId. ' + 
+          'This could be due to insufficient resources, action points, or other limitations.',
+          400
+        );
+      }
+    } catch (e) {
+      return _errorResponse('Error training unit: $e');
+    }
   }
   
   Response _trainUnitGeneric(Request request, String unitType) {
-    final result = gameInterface.trainUnitGeneric(unitType);
-    return _successResponse(result);
+    try {
+      // Get the game controller
+      final gameController = container.read(gameControllerProvider);
+      final gameState = gameController.currentGameState;
+      
+      // Convert string unitType to UnitType enum
+      UnitType? type;
+      for (final uType in UnitType.values) {
+        if (uType.toString().split('.').last.toLowerCase() == unitType.toLowerCase()) {
+          type = uType;
+          break;
+        }
+      }
+      
+      if (type == null) {
+        return _errorResponse('Unknown unit type: $unitType');
+      }
+      
+      // Check if player has enough resources before attempting to train
+      final currentPlayer = gameState.currentPlayerId;
+      final playerResources = gameState.getPlayerResources(currentPlayer);
+      final unitCost = getUnitCosts(type);
+      
+      // Check for sufficient resources
+      if (!playerResources.hasEnoughMultiple(unitCost)) {
+        final requiredResources = {};
+        unitCost.forEach((resource, amount) {
+          requiredResources[resource] = amount;
+        });
+        
+        return _errorResponse(
+          'Insufficient resources to train $unitType. Required: ${requiredResources}',
+          400
+        );
+      }
+      
+      // Count units before training
+      final unitCountBefore = gameState.units.where((u) => u.ownerID == currentPlayer).length;
+      
+      // Try to train the unit
+      final success = gameController.trainUnitGeneric(type);
+      
+      // Verify that a unit was actually created
+      final updatedGameState = gameController.currentGameState;
+      final unitCountAfter = updatedGameState.units.where((u) => u.ownerID == currentPlayer).length;
+      
+      if (unitCountAfter > unitCountBefore) {
+        return _successResponse('$unitType trained successfully');
+      } else {
+        return _errorResponse(
+          'Failed to train $unitType. Make sure you have selected an appropriate building ' + 
+          'and have enough resources and action points.',
+          400
+        );
+      }
+    } catch (e) {
+      return _errorResponse('Error training unit: $e');
+    }
   }
   
+  // Add training unit selection method
   Response _selectUnitToTrain(Request request, String unitType) {
-    final result = gameInterface.selectUnitToTrain(unitType);
-    return _successResponse(result);
+    try {
+      // Convert string unitType to UnitType enum
+      UnitType? type;
+      for (final uType in UnitType.values) {
+        if (uType.toString().split('.').last.toLowerCase() == unitType.toLowerCase()) {
+          type = uType;
+          break;
+        }
+      }
+      
+      if (type == null) {
+        return _errorResponse('Unknown unit type: $unitType');
+      }
+      
+      // Get the game controller
+      final gameController = container.read(gameControllerProvider);
+      
+      // Select the unit type to train
+      gameController.selectUnitToTrain(type);
+      
+      return _successResponse('Selected unit type $unitType to train');
+    } catch (e) {
+      return _errorResponse('Error selecting unit to train: $e');
+    }
   }
   
+  // Add building selection method
   Response _selectBuildingToBuild(Request request, String buildingType) {
-    final result = gameInterface.selectBuildingToBuild(buildingType);
-    return _successResponse(result);
+    try {
+      // Convert string buildingType to BuildingType enum
+      BuildingType? type;
+      for (final bType in BuildingType.values) {
+        if (bType.toString().split('.').last.toLowerCase() == buildingType.toLowerCase()) {
+          type = bType;
+          break;
+        }
+      }
+      
+      if (type == null) {
+        return _errorResponse('Unknown building type: $buildingType');
+      }
+      
+      // Get the game controller
+      final gameController = container.read(gameControllerProvider);
+      
+      // Select the building type to build
+      gameController.selectBuildingToBuild(type);
+      
+      return _successResponse('Selected building type $buildingType to build');
+    } catch (e) {
+      return _errorResponse('Error selecting building to build: $e');
+    }
+  }
+  
+  // Get unit costs from the training buildings in game_core
+  Map<ResourceType, int> getUnitCosts(UnitType unitType) {
+    // Get the game controller to access game state
+    final gameController = container.read(gameControllerProvider);
+    final gameState = gameController.currentGameState;
+    
+    // Find a building that can train this unit type
+    Building? trainerBuilding;
+    
+    // First check all buildings that implement UnitTrainer
+    for (final building in gameState.buildings) {
+      // Skip buildings that don't belong to current player
+      if (building.ownerID != gameState.currentPlayerId) continue;
+      
+      if (building is UnitTrainer && (building as UnitTrainer).canTrainUnit(unitType)) {
+        trainerBuilding = building;
+        break;
+      }
+    }
+    
+    // If we found a trainer building, use its getTrainingCost method
+    if (trainerBuilding != null && trainerBuilding is UnitTrainer) {
+      return (trainerBuilding as UnitTrainer).getTrainingCost(unitType);
+    }
+    
+    // Fallback to UnitFactory food costs and standard additional resources
+    // This is a fallback implementation for when no trainer building is available
+    final foodCost = UnitFactory.getUnitFoodCost(unitType);
+    Map<ResourceType, int> costs = {ResourceType.food: foodCost};
+    
+    // Add standard additional costs based on unit type from game_core
+    if (unitType == UnitType.settler) {
+      costs[ResourceType.wood] = 50;
+    } else if (unitType == UnitType.soldierTroop) {
+      costs[ResourceType.iron] = 30;
+    } else if (unitType == UnitType.archer) {
+      costs[ResourceType.wood] = 30;
+      costs[ResourceType.iron] = 20;
+    } else if (unitType == UnitType.knight) {
+      costs[ResourceType.iron] = 50;
+    } else if ([UnitType.farmer, UnitType.lumberjack, UnitType.miner].contains(unitType)) {
+      costs[ResourceType.wood] = 20;
+    } else if (unitType == UnitType.commander) {
+      costs[ResourceType.iron] = 30;
+    } else if (unitType == UnitType.architect) {
+      costs[ResourceType.wood] = 40;
+      costs[ResourceType.stone] = 20;
+    }
+    
+    return costs;
+  }
+  
+  // Fix the unit type in the building training method
+  bool canBuildingTrainUnitType(Building building, UnitType unitType) {
+    // This is a simplified version - in a real implementation,
+    // you would have more detailed logic based on building type
+    switch (building.type) {
+      case BuildingType.barracks:
+        return [UnitType.soldierTroop, UnitType.archer, UnitType.knight].contains(unitType);
+      case BuildingType.cityCenter:
+        return [UnitType.settler, UnitType.farmer, UnitType.lumberjack, UnitType.miner, 
+                UnitType.commander, UnitType.architect].contains(unitType);
+      default:
+        return false;
+    }
   }
   
   // === Map and Tile Information ===
@@ -346,8 +863,35 @@ class GameApiService {
   
   // === Game Flow ===
   Response _endTurn(Request request) {
-    final result = gameInterface.endTurn();
-    return _successResponse(result);
+    try {
+      // Get game controller and game state
+      final gameController = container.read(gameControllerProvider);
+      final gameStateBefore = gameController.currentGameState;
+      final currentPlayerIdBefore = gameStateBefore.currentPlayerId;
+      final currentTurnBefore = gameStateBefore.turn;
+      
+      // End the turn
+      gameController.endTurn();
+      
+      // Get the updated state
+      final gameStateAfter = gameController.currentGameState;
+      final currentPlayerIdAfter = gameStateAfter.currentPlayerId;
+      final currentTurnAfter = gameStateAfter.turn;
+      
+      // Prepare detailed response
+      final Map<String, dynamic> details = {
+        'previousPlayer': currentPlayerIdBefore,
+        'currentPlayer': currentPlayerIdAfter,
+        'previousTurn': currentTurnBefore,
+        'currentTurn': currentTurnAfter,
+        'turnIncremented': currentTurnAfter > currentTurnBefore,
+        'playerChanged': currentPlayerIdBefore != currentPlayerIdAfter,
+      };
+      
+      return _successResponse('Turn ended successfully', details);
+    } catch (e) {
+      return _errorResponse('Error ending turn: $e');
+    }
   }
   
   Response _clearSelection(Request request) {
@@ -356,8 +900,52 @@ class GameApiService {
   }
   
   Response _foundCity(Request request) {
-    final result = gameInterface.foundCity();
-    return _successResponse(result);
+    try {
+      // Get game controller and game state
+      final gameController = container.read(gameControllerProvider);
+      final gameState = gameController.currentGameState;
+      
+      // Check if any unit is selected
+      if (gameState.selectedUnitId == null) {
+        return _errorResponse(
+          'No unit is selected. Please select a Settler unit first.',
+          400
+        );
+      }
+      
+      // Find the selected unit
+      final selectedUnit = gameState.units.where((u) => u.id == gameState.selectedUnitId).toList();
+      
+      // Check if the selected unit exists
+      if (selectedUnit.isEmpty) {
+        return _errorResponse(
+          'Selected unit does not exist or is no longer available.',
+          404
+        );
+      }
+      
+      // Check if the selected unit is a settler
+      if (selectedUnit.first.type != UnitType.settler) {
+        return _errorResponse(
+          'Selected unit is not a Settler. Only Settlers can found cities.',
+          400
+        );
+      }
+      
+      // Try to found a city
+      final success = gameController.foundCity();
+      
+      if (success) {
+        return _successResponse('City founded successfully with the selected settler');
+      } else {
+        return _errorResponse(
+          'Failed to found a city. Make sure the settler has enough action points and is on a suitable location.',
+          400
+        );
+      }
+    } catch (e) {
+      return _errorResponse('Error founding city: $e');
+    }
   }
   
   // === Camera Controls ===
@@ -394,8 +982,41 @@ class GameApiService {
   }
   
   Response _getScoreboard(Request request) {
-    final scoreboard = gameInterface.getScoreboard();
-    return _successResponse('Scoreboard retrieved', {'scoreboard': scoreboard});
+    // Get the game controller to access game state
+    final gameController = container.read(gameControllerProvider);
+    final gameState = gameController.currentGameState;
+    final players = gameState.getAllPlayerIDs();
+    
+    if (players.isEmpty) {
+      return _errorResponse('No players found', 404);
+    }
+    
+    // Collect detailed statistics for each player
+    final List<Map<String, dynamic>> scoreboardData = [];
+    
+    for (final playerId in players) {
+      final stats = gameState.getPlayerStatistics()[playerId];
+      final player = gameState.playerManager.getPlayer(playerId);
+      
+      if (stats != null && player != null) {
+        scoreboardData.add({
+          'id': playerId,
+          'name': player.name,
+          'score': player.points,
+          'type': gameState.isHumanPlayer(playerId) ? 'Human' : 'AI',
+          'isCurrentPlayer': playerId == gameState.currentPlayerId,
+          'units': stats['units'] ?? 0,
+          'buildings': stats['buildings'] ?? 0,
+          'settlements': stats['settlements'] ?? 0,
+          'resources': gameState.getPlayerResources(playerId).toJson(),
+        });
+      }
+    }
+    
+    // Sort the scoreboard by score (descending)
+    scoreboardData.sort((a, b) => (b['score'] as int).compareTo(a['score'] as int));
+    
+    return _successResponse('Scoreboard retrieved', {'players': scoreboardData});
   }
   
   Response _addHumanPlayer(Request request, String name) {
@@ -422,5 +1043,58 @@ class GameApiService {
   Response _switchToPlayer(Request request, String playerId) {
     final result = gameInterface.switchToPlayer(playerId);
     return _successResponse(result);
+  }
+  
+  // Move a unit from one position to another
+  Response _moveUnitAtPosition(Request request, String fromXStr, String fromYStr, String toXStr, String toYStr) {
+    try {
+      final fromX = int.parse(fromXStr);
+      final fromY = int.parse(fromYStr);
+      final toX = int.parse(toXStr);
+      final toY = int.parse(toYStr);
+      
+      // Get game controller and game state
+      final gameController = container.read(gameControllerProvider);
+      final gameState = gameController.currentGameState;
+      
+      // Find units at the starting position
+      final unitsAtPosition = gameState.getUnitsAt(Position(x: fromX, y: fromY));
+      
+      // Check if there are any units at this position
+      if (unitsAtPosition.isEmpty) {
+        return _errorResponse('No units found at position ($fromX, $fromY)', 404);
+      }
+      
+      // Filter to only get current player's units
+      final playerUnits = unitsAtPosition.where(
+        (unit) => unit.ownerID == gameState.currentPlayerId
+      ).toList();
+      
+      if (playerUnits.isEmpty) {
+        return _errorResponse('No units belonging to the current player found at position ($fromX, $fromY)', 404);
+      }
+      
+      // Select the first unit (we could add more logic to choose the most appropriate unit)
+      final unit = playerUnits.first;
+      
+      // First select the unit
+      gameController.selectUnit(unit.id);
+      
+      // Then move it
+      final success = gameController.moveUnit(unit.id, Position(x: toX, y: toY));
+      
+      if (success) {
+        return _successResponse('Unit ${unit.id} moved from ($fromX, $fromY) to ($toX, $toY)', {
+          'unitId': unit.id,
+          'unitType': unit.type.toString(),
+          'fromPosition': {'x': fromX, 'y': fromY},
+          'toPosition': {'x': toX, 'y': toY}
+        });
+      } else {
+        return _errorResponse('Failed to move unit ${unit.id} to ($toX, $toY)', 400);
+      }
+    } catch (e) {
+      return _errorResponse('Invalid parameters: $e', 400);
+    }
   }
 }

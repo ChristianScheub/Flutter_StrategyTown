@@ -15,7 +15,6 @@ dependencies:
   equatable: ^2.0.5
   # For file operations
   path: ^1.8.3
-  flutter_riverpod: ^2.6.1
 
 dev_dependencies:
   test: ^1.24.3

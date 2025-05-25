@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-/// Utility functions for HTTP requests used in the Flutter app.
-/// Move this file to flutter_app/lib/utils/ if not already there.
+/// Utility functions for HTTP requests used in the backend service.
+/// This version is specifically for the backend API and handles REST responses.
 
 class ApiException implements Exception {
   final String message;

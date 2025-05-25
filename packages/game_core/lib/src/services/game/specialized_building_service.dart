@@ -66,15 +66,9 @@ class SpecializedBuildingService extends BaseGameService {
   }
 
   void buildMine() {
-    final unit = selectedUnit;
-    if (unit == null || !(unit is Miner)) return;
-    
-    final tile = state.map.getTile(unit.position);
-    final isIronMine = tile.resourceType == ResourceType.iron;
-    
     _buildWithSpecializedUnit<Miner>(
       BuildingType.mine,
-      (position) => Mine.create(position, isIronMine: isIronMine, ownerID: state.currentPlayerId),
+      (position) => Mine.create(position, ownerID: state.currentPlayerId),
       consumeUnit: true
     );
   }

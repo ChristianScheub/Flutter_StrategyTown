@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:game_core/src/models/game/game_state.dart';
 import 'package:game_core/src/models/map/position.dart';
 import 'package:game_core/src/models/buildings/building.dart';

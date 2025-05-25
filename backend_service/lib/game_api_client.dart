@@ -72,12 +72,12 @@ class GameApiClient {
       post('buildings/build-at-position/$x/$y');
 
   // === Quick Build Actions ===
-  Future<Map<String, dynamic>> buildFarm() => post('quick-build/farm');
-  Future<Map<String, dynamic>> buildLumberCamp() => post('quick-build/lumber-camp');
-  Future<Map<String, dynamic>> buildMine() => post('quick-build/mine');
-  Future<Map<String, dynamic>> buildBarracks() => post('quick-build/barracks');
-  Future<Map<String, dynamic>> buildDefensiveTower() => post('quick-build/defensive-tower');
-  Future<Map<String, dynamic>> buildWall() => post('quick-build/wall');
+  Future<Map<String, dynamic>> buildFarm(String unitId) => post('quick-build/farm/$unitId');
+  Future<Map<String, dynamic>> buildLumberCamp(String unitId) => post('quick-build/lumber-camp/$unitId');
+  Future<Map<String, dynamic>> buildMine(String unitId) => post('quick-build/mine/$unitId');
+  Future<Map<String, dynamic>> buildBarracks(String unitId) => post('quick-build/barracks/$unitId');
+  Future<Map<String, dynamic>> buildDefensiveTower(String unitId) => post('quick-build/defensive-tower/$unitId');
+  Future<Map<String, dynamic>> buildWall(String unitId) => post('quick-build/wall/$unitId');
 
   // === Training Units ===
   Future<Map<String, dynamic>> trainUnit(String unitType, String buildingId) =>
@@ -123,6 +123,10 @@ class GameApiClient {
   // === Multiplayer Controls ===
   Future<Map<String, dynamic>> switchPlayer() => post('switch-player');
   Future<Map<String, dynamic>> switchToPlayer(String playerId) => post('switch-to-player/$playerId');
+
+  // === Building with Specific Units ===
+  Future<Map<String, dynamic>> buildWithSpecificUnit(String unitId, String buildingType, int x, int y) =>
+      post('buildings/build-with-unit/$unitId/$buildingType/$x/$y');
 }
 
 /// Exception thrown when API calls fail

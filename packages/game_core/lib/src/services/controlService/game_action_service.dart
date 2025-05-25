@@ -1,4 +1,5 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_core/game_core.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:game_core/src/models/game/game_state.dart';
 import 'package:game_core/src/models/buildings/building.dart';
 import 'package:game_core/src/models/units/unit.dart';
@@ -310,5 +311,50 @@ class GameActionService {
   /// Springt zum ersten Siedler
   void jumpToFirstSettler() {
     _gameNotifier.jumpToFirstSettler();
+  }
+  
+  /// Baut ein Gebäude mit einer spezifischen Einheit
+  bool buildWithUnit(String unitId, BuildingType buildingType, Position position) {
+    try {
+      // Wähle die Einheit aus
+      selectUnit(unitId);
+      
+      // Wähle die Position aus 
+      selectTile(position);
+      
+      // Je nach Gebäudetyp rufen wir die entsprechende spezialisierte Methode auf
+      // Diese Methoden prüfen intern bereits, ob die gewählte Einheit vom korrekten Typ ist
+      switch (buildingType) {
+        case BuildingType.farm:
+          _gameNotifier.buildFarm();
+          break;
+        case BuildingType.lumberCamp:
+          _gameNotifier.buildLumberCamp();
+          break;
+        case BuildingType.mine:
+          _gameNotifier.buildMine();
+          break;
+        case BuildingType.barracks:
+          _gameNotifier.buildBarracks();
+          break;
+        case BuildingType.defensiveTower:
+          _gameNotifier.buildDefensiveTower();
+          break;
+        case BuildingType.wall:
+          _gameNotifier.buildWall();
+          break;
+        default:
+          // Für andere Gebäudetypen verwenden wir die allgemeine Methode
+          _gameNotifier.selectBuildingToBuild(buildingType);
+          _gameNotifier.buildBuilding(position);
+      }
+      
+      // Prüfen, ob ein Gebäude an dieser Position entstanden ist
+      final hasBuilding = _currentState.map.getTile(position).hasBuilding;
+      return hasBuilding;
+    } catch (e) {
+      print('Fehler beim Bauen des Gebäudes: $e');
+      return false;
+    }
   }
 }

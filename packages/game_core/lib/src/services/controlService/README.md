@@ -99,6 +99,14 @@ gameController.buildFarm();
 gameController.buildBarracks();
 gameController.buildDefensiveTower();
 
+// Spezifische Gebäude mit bestimmten Einheiten bauen
+gameController.buildFarmWithUnit("unit_1", Position(3, 3));
+gameController.buildLumberCampWithUnit("unit_2", Position(4, 4));
+gameController.buildMineWithUnit("unit_3", Position(5, 5));
+gameController.buildBarracksWithUnit("unit_4", Position(6, 6));
+gameController.buildDefensiveTowerWithUnit("unit_5", Position(7, 7));
+gameController.buildWallWithUnit("unit_6", Position(8, 8));
+
 // Navigation
 gameController.jumpToFirstCity();
 gameController.jumpToEnemyHeadquarters();
@@ -417,15 +425,18 @@ Alle Dateien implementieren die vollständige GUI-Funktionalität und bieten sow
 - `"remove_player <id>"` - Spieler entfernen
 - `"start_new_game"` - Neues Spiel
 
-## 🎮 **Mehrspielersystem (v2.0)**
+### Mehrspieler Funktionen
 
-Das Control Service unterstützt jetzt vollständige Mehrspielerfunktionalität:
+#### Spieler hinzufügen
+```dart
+// Menschlichen Spieler hinzufügen
+gameController.addHumanPlayer("Player 1");
 
-### Spielertypen
-- **Menschliche Spieler**: Interaktive Kontrolle über GUI oder Terminal
-- **KI-Spieler**: Automatisierte Steuerung durch AI-Strategien
+// KI-Spieler hinzufügen
+gameController.addAIPlayer("Computer");
+```
 
-### Spielerzug-Management
+#### Spielerzug-Management
 ```dart
 // Aktuelle Spielerinformationen
 String currentPlayer = gameController.currentPlayerId;
@@ -442,7 +453,7 @@ List<Unit> units = gameController.currentPlayerUnits;
 List<Building> buildings = gameController.currentPlayerBuildings;
 ```
 
-### Terminal-Mehrspielerbefehle
+#### Terminal-Mehrspielerbefehle
 ```bash
 # Spielerwechsel
 switch_player                    # Nächster Spieler

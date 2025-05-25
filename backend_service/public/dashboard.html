@@ -123,6 +123,12 @@
                     <input type="text" id="buildingId" placeholder="Building ID">
                     <button onclick="selectBuilding()">Select Building</button>
                 </div>
+                <div class="action-group">
+                    <input type="text" id="moveUnitId" placeholder="Unit ID" style="width: 50px">
+                    X: <input type="number" id="moveX" value="0" style="width: 40px">
+                    Y: <input type="number" id="moveY" value="0" style="width: 40px">
+                    <button onclick="moveUnit()">Move Unit</button>
+                </div>
             </div>
             
             <div class="group">
@@ -142,21 +148,94 @@
             
             <div class="group">
                 <h3>Actions</h3>
-                <button onclick="callApi('end-turn', 'POST')">End Turn</button>
+                <button onclick="endTurn()" style="background-color: #ff9800; font-weight: bold;">End Turn ⏭️</button>
                 <button onclick="callApi('clear-selection', 'POST')">Clear Selection</button>
-                <button onclick="callApi('found-city', 'POST')">Found City</button>
-                <button onclick="callApi('harvest', 'POST')">Harvest Resource</button>
+                <div class="action-group">
+                    <input type="text" id="settlerUnitId" placeholder="Settler Unit ID">
+                    <button onclick="foundCityWithUnit()">Found City</button>
+                </div>
+                <button onclick="callApi('units/harvest', 'POST')">Harvest Resource</button>
                 <button onclick="callApi('buildings/upgrade', 'POST')">Upgrade Building</button>
             </div>
             
             <div class="group">
+                <h3>Training Units</h3>
+                <div class="action-group">
+                    <input type="text" id="trainingBuildingId" placeholder="Building ID" style="width: 100px">
+                    <select id="unitTypeToTrain">
+                        <option value="settler">Settler</option>
+                        <option value="warrior">Warrior</option>
+                        <option value="archer">Archer</option>
+                        <option value="knight">Knight</option>
+                        <option value="farmer">Farmer</option>
+                        <option value="lumberjack">Lumberjack</option>
+                        <option value="miner">Miner</option>
+                        <option value="commander">Commander</option>
+                        <option value="architect">Architect</option>
+                    </select>
+                    <button onclick="trainUnitInBuilding()">Train Unit</button>
+                </div>
+                <div class="action-group">
+                    <select id="genericUnitType">
+                        <option value="settler">Settler</option>
+                        <option value="warrior">Warrior</option>
+                        <option value="archer">Archer</option>
+                        <option value="knight">Knight</option>
+                        <option value="farmer">Farmer</option>
+                        <option value="lumberjack">Lumberjack</option>
+                        <option value="miner">Miner</option>
+                        <option value="commander">Commander</option>
+                        <option value="architect">Architect</option>
+                    </select>
+                    <button onclick="trainUnitGeneric()">Train Unit (Generic)</button>
+                </div>
+            </div>
+            
+            <div class="group">
                 <h3>Quick Build</h3>
-                <button onclick="callApi('quick-build/farm', 'POST')">Build Farm</button>
-                <button onclick="callApi('quick-build/lumber-camp', 'POST')">Build Lumber Camp</button>
-                <button onclick="callApi('quick-build/mine', 'POST')">Build Mine</button>
-                <button onclick="callApi('quick-build/barracks', 'POST')">Build Barracks</button>
-                <button onclick="callApi('quick-build/defensive-tower', 'POST')">Build Tower</button>
-                <button onclick="callApi('quick-build/wall', 'POST')">Build Wall</button>
+                <div class="action-group">
+                    <input type="text" id="farmerUnitId" placeholder="Farmer Unit ID">
+                    <button onclick="buildFarm()">Build Farm</button>
+                </div>
+                <div class="action-group">
+                    <input type="text" id="lumberjackUnitId" placeholder="Lumberjack Unit ID">
+                    <button onclick="buildLumberCamp()">Build Lumber Camp</button>
+                </div>
+                <div class="action-group">
+                    <input type="text" id="minerUnitId" placeholder="Miner Unit ID">
+                    <button onclick="buildMine()">Build Mine</button>
+                </div>
+                <div class="action-group">
+                    <input type="text" id="commanderUnitId" placeholder="Commander Unit ID">
+                    <button onclick="buildBarracks()">Build Barracks</button>
+                </div>
+                <div class="action-group">
+                    <input type="text" id="architectUnitId1" placeholder="Architect Unit ID">
+                    <button onclick="buildDefensiveTower()">Build Tower</button>
+                </div>
+                <div class="action-group">
+                    <input type="text" id="architectUnitId2" placeholder="Architect Unit ID">
+                    <button onclick="buildWall()">Build Wall</button>
+                </div>
+            </div>
+            
+            <div class="group">
+                <h3>Advanced Building</h3>
+                <div class="action-group">
+                    <input type="text" id="buildUnitId" placeholder="Unit ID" style="width: 100px">
+                    <select id="buildingType">
+                        <option value="farm">Farm</option>
+                        <option value="lumberCamp">Lumber Camp</option>
+                        <option value="mine">Mine</option>
+                        <option value="barracks">Barracks</option>
+                        <option value="defensiveTower">Defensive Tower</option>
+                        <option value="wall">Wall</option>
+                    </select>
+                    <br>
+                    X: <input type="number" id="buildX" value="10" style="width: 40px">
+                    Y: <input type="number" id="buildY" value="10" style="width: 40px">
+                    <button onclick="buildWithSpecificUnit()">Build</button>
+                </div>
             </div>
         </div>
         
@@ -250,6 +329,223 @@ Click any button to see the API response here.</pre>
             const y = document.getElementById('tileY').value;
             callApi(`tile-info/${x}/${y}`, 'GET');
         }
-    </script>
+        
+        // Building functions that require unit IDs
+        function buildFarm() {
+            const unitId = document.getElementById('farmerUnitId').value.trim();
+            if (unitId) {
+                callApi(`quick-build/farm/${unitId}`, 'POST');
+            } else {
+                alert('Please enter a Farmer Unit ID');
+            }
+        }
+        
+        function buildLumberCamp() {
+            const unitId = document.getElementById('lumberjackUnitId').value.trim();
+            if (unitId) {
+                callApi(`quick-build/lumber-camp/${unitId}`, 'POST');
+            } else {
+                alert('Please enter a Lumberjack Unit ID');
+            }
+        }
+        
+        function buildMine() {
+            const unitId = document.getElementById('minerUnitId').value.trim();
+            if (unitId) {
+                callApi(`quick-build/mine/${unitId}`, 'POST');
+            } else {
+                alert('Please enter a Miner Unit ID');
+            }
+        }
+        
+        function buildBarracks() {
+            const unitId = document.getElementById('commanderUnitId').value.trim();
+            if (unitId) {
+                callApi(`quick-build/barracks/${unitId}`, 'POST');
+            } else {
+                alert('Please enter a Commander Unit ID');
+            }
+        }
+        
+        function buildDefensiveTower() {
+            const unitId = document.getElementById('architectUnitId1').value.trim();
+            if (unitId) {
+                callApi(`quick-build/defensive-tower/${unitId}`, 'POST');
+            } else {
+                alert('Please enter an Architect Unit ID');
+            }
+        }
+        
+        function buildWall() {
+            const unitId = document.getElementById('architectUnitId2').value.trim();
+            if (unitId) {
+                callApi(`quick-build/wall/${unitId}`, 'POST');
+            } else {
+                alert('Please enter an Architect Unit ID');
+            }
+        }
+        
+        function buildWithSpecificUnit() {
+            const unitId = document.getElementById('buildUnitId').value.trim();
+            const buildingType = document.getElementById('buildingType').value;
+            const x = document.getElementById('buildX').value;
+            const y = document.getElementById('buildY').value;
+            
+            if (unitId) {
+                callApi(`buildings/build-with-unit/${unitId}/${buildingType}/${x}/${y}`, 'POST');
+            } else {
+                alert('Please enter a Unit ID');
+            }
+        }
+        
+        function foundCityWithUnit() {
+            const unitId = document.getElementById('settlerUnitId').value.trim();
+            if (unitId) {
+                // First try to select the unit
+                callApi(`units/select/${unitId}`, 'POST')
+                    .then(response => {
+                        if (response && response.success) {
+                            // If unit selection succeeds, try to found a city with the selected unit
+                            return callApi(`found-city`, 'POST');
+                        } else {
+                            // If unit selection fails, show the error message
+                            outputEl.textContent = JSON.stringify(response, null, 2);
+                            outputEl.style.color = 'red';
+                            throw new Error(response.error || 'Failed to select unit');
+                        }
+                    })
+                    .then(response => {
+                        // Show the found city response
+                        outputEl.textContent = JSON.stringify(response, null, 2);
+                        if (!response.success) {
+                            outputEl.style.color = 'red';
+                        }
+                    })
+                    .catch(error => {
+                        // Only show error here if we haven't already shown one
+                        if (!outputEl.textContent.includes("error")) {
+                            outputEl.textContent = JSON.stringify({
+                                "success": false,
+                                "error": error.message
+                            }, null, 2);
+                            outputEl.style.color = 'red';
+                        }
+                    });
+            } else {
+                alert('Please enter a Settler Unit ID');
+            }
+        }
+        
+        // Training units
+        function trainUnitInBuilding() {
+            const buildingId = document.getElementById('trainingBuildingId').value.trim();
+            const unitType = document.getElementById('unitTypeToTrain').value;
+            
+            if (buildingId) {
+                // First directly try to select the building
+                callApi(`buildings/select/${buildingId}`, 'POST')
+                    .then(response => {
+                        if (response && response.success) {
+                            // If building selection succeeds, try to train the unit
+                            return callApi(`train-unit/${unitType}/${buildingId}`, 'POST');
+                        } else {
+                            // If building selection fails, show the error message
+                            outputEl.textContent = JSON.stringify(response, null, 2);
+                            outputEl.style.color = 'red';
+                            throw new Error(response.error || 'Failed to select building');
+                        }
+                    })
+                    .then(trainResponse => {
+                        // Show the training response
+                        outputEl.textContent = JSON.stringify(trainResponse, null, 2);
+                        if (!trainResponse.success) {
+                            outputEl.style.color = 'red';
+                            return;
+                        }
+                        // After training, automatically refresh the units list
+                        setTimeout(() => {
+                            callApi('units', 'GET');
+                        }, 1000);
+                    })
+                    .catch(error => {
+                        // Only show error here if we haven't already shown one
+                        if (!outputEl.textContent.includes("error")) {
+                            outputEl.textContent = JSON.stringify({
+                                "success": false,
+                                "error": error.message
+                            }, null, 2);
+                            outputEl.style.color = 'red';
+                        }
+                    });
+            } else {
+                alert('Please enter a Building ID');
+            }
+        }
+        
+        function trainUnitGeneric() {
+            const unitType = document.getElementById('genericUnitType').value;
+            
+            // Get current player resources before training
+            callApi('players/current', 'GET')
+                .then(response => {
+                    if (response.success) {
+                        const playerBefore = response.player;
+                        
+                        // Try to train the unit
+                        callApi(`train-unit-generic/${unitType}`, 'POST')
+                            .then(trainResponse => {
+                                // After training, automatically refresh units and show current player (for resources)
+                                if (trainResponse.success) {
+                                    setTimeout(() => {
+                                        callApi('units', 'GET');
+                                    }, 1000);
+                                }
+                            });
+                    }
+                });
+        }
+        
+        // End turn with automatic refresh of game status
+        function endTurn() {
+            callApi('end-turn', 'POST')
+                .then(response => {
+                    if (response.success) {
+                        // Show helpful information about turn transition
+                        const details = response;
+                        outputEl.textContent = JSON.stringify(details, null, 2);
+                        
+                        // Highlight the output in a special color for turn changes
+                        outputEl.style.color = '#ff9800';
+                        
+                        // Refresh the game status automatically
+                        setTimeout(() => {
+                            callApi('game-status', 'GET');
+                        }, 1000);
+                    }
+                });
+        }
+
+        // Add function to move unit by ID to given coordinates
+        function moveUnit() {
+            const unitId = document.getElementById('moveUnitId').value.trim();
+            const x = document.getElementById('moveX').value;
+            const y = document.getElementById('moveY').value;
+            if (unitId) {
+                callApi(`units/move/${unitId}/${x}/${y}`, 'POST')
+                    .then(response => {
+                        // Show move result
+                        outputEl.textContent = JSON.stringify(response, null, 2);
+                        if (!response.success) {
+                            outputEl.style.color = 'red';
+                        }
+                    });
+            } else {
+                alert('Please enter a Unit ID');
+            }
+        }
+
+
+
+   </script>    </script>
 </body>
 </html>
