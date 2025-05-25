@@ -16,6 +16,8 @@ dependencies:
   path_provider: ^2.1.1
   shared_preferences: ^2.2.2
   http: ^1.4.0
+  game_core:
+    path: packages/game_core
 
 dev_dependencies:
   flutter_test:

@@ -2,10 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_core/game_core.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
-import 'package:flutter_sim_city/services/controlService/terminal_game_interface.dart';
-import 'package:flutter_sim_city/services/controlService/init_game_for_gui_service.dart';
 
 class GameApiService {
   // Singleton instance of ProviderContainer for accessing providers
@@ -91,8 +90,6 @@ class GameApiService {
     
     // === Game Management ===
     router.post('/start-new-game', _startNewGame);
-    router.post('/save-game/<name>', _saveGame);
-    router.post('/load-game/<key>', _loadGame);
     
     // === Player Management ===
     router.get('/players/all', _listAllPlayers);
@@ -377,16 +374,6 @@ class GameApiService {
   // === Game Management ===
   Response _startNewGame(Request request) {
     final result = gameInterface.startNewGame();
-    return _successResponse(result);
-  }
-  
-  Future<Response> _saveGame(Request request, String name) async {
-    final result = await gameInterface.saveGame(name);
-    return _successResponse(result);
-  }
-  
-  Future<Response> _loadGame(Request request, String key) async {
-    final result = await gameInterface.loadGame(key);
     return _successResponse(result);
   }
   

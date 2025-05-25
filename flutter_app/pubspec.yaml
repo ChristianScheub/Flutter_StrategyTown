@@ -1,0 +1,30 @@
+name: flutter_city_frontend
+description: A frontend application for the Sim City-style game
+version: 1.0.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  # HTTP server related
+  shelf: ^1.4.1
+  shelf_router: ^1.1.4
+  http: ^1.1.0
+  # For serialization/deserialization
+  json_annotation: ^4.8.1
+  # For accessing the game controller
+  flutter_riverpod: ^2.3.6
+  uuid: ^3.0.7
+  equatable: ^2.0.5
+  # Shared preferences for storing game settings
+  shared_preferences: ^2.2.0
+
+dev_dependencies:
+  lints: ^2.1.0
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1
+
+# This tells Dart where to find the game code
+dependency_overrides:
+  flutter_sim_city:
+    path: ..

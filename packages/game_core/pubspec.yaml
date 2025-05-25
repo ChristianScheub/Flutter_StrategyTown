@@ -1,0 +1,26 @@
+name: game_core
+description: Core game models and services for the Sim City-style game
+version: 1.0.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  # State management (works without Flutter UI)
+  riverpod: ^2.3.6
+  # Serialization
+  json_annotation: ^4.8.1
+  # Utility packages
+  uuid: ^3.0.7
+  equatable: ^2.0.5
+  # For file operations
+  path: ^1.8.3
+  flutter_riverpod: ^2.6.1
+
+dev_dependencies:
+  test: ^1.24.3
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1
+  lints: ^2.1.0
+
+# This is a pure Dart package - NO Flutter dependencies
