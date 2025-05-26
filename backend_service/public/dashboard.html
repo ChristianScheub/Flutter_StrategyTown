@@ -175,20 +175,6 @@
                     </select>
                     <button onclick="trainUnitInBuilding()">Train Unit</button>
                 </div>
-                <div class="action-group">
-                    <select id="genericUnitType">
-                        <option value="settler">Settler</option>
-                        <option value="warrior">Warrior</option>
-                        <option value="archer">Archer</option>
-                        <option value="knight">Knight</option>
-                        <option value="farmer">Farmer</option>
-                        <option value="lumberjack">Lumberjack</option>
-                        <option value="miner">Miner</option>
-                        <option value="commander">Commander</option>
-                        <option value="architect">Architect</option>
-                    </select>
-                    <button onclick="trainUnitGeneric()">Train Unit (Generic)</button>
-                </div>
             </div>
             
             <div class="group">
@@ -480,29 +466,6 @@ Click any button to see the API response here.</pre>
             } else {
                 alert('Please enter a Building ID');
             }
-        }
-        
-        function trainUnitGeneric() {
-            const unitType = document.getElementById('genericUnitType').value;
-            
-            // Get current player resources before training
-            callApi('players/current', 'GET')
-                .then(response => {
-                    if (response.success) {
-                        const playerBefore = response.player;
-                        
-                        // Try to train the unit
-                        callApi(`train-unit-generic/${unitType}`, 'POST')
-                            .then(trainResponse => {
-                                // After training, automatically refresh units and show current player (for resources)
-                                if (trainResponse.success) {
-                                    setTimeout(() => {
-                                        callApi('units', 'GET');
-                                    }, 1000);
-                                }
-                            });
-                    }
-                });
         }
         
         // End turn with automatic refresh of game status

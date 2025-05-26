@@ -82,8 +82,6 @@ class GameApiClient {
   // === Training Units ===
   Future<Map<String, dynamic>> trainUnit(String unitType, String buildingId) =>
       post('train-unit/$unitType/$buildingId');
-  Future<Map<String, dynamic>> trainUnitGeneric(String unitType) =>
-      post('train-unit-generic/$unitType');
   Future<Map<String, dynamic>> selectUnitToTrain(String unitType) =>
       post('select-unit-to-train/$unitType');
   Future<Map<String, dynamic>> selectBuildingToBuild(String buildingType) =>

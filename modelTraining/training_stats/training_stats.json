@@ -1,0 +1,13 @@
+{
+  "episode_rewards": [],
+  "episode_lengths": [],
+  "api_calls_per_episode": [],
+  "rounds_per_episode": [],
+  "ai_performance": {
+    "0": [],
+    "1": [],
+    "2": [],
+    "3": [],
+    "4": []
+  }
+}
