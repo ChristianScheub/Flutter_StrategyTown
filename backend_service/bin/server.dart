@@ -38,7 +38,7 @@ void main(List<String> args) async {
   print('Initializing Game Backend Server...');
   
   // Use any available port
-  final port = int.parse(Platform.environment['PORT'] ?? '8080');
+  final port = int.parse(Platform.environment['PORT'] ?? '8081');
   
   // Create service with proper initialization
   print('Setting up game service...');

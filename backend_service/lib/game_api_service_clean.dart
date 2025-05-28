@@ -1,7 +1,7 @@
 import 'package:riverpod/riverpod.dart';
 import 'package:game_core/game_core.dart';
 import 'package:shelf_router/shelf_router.dart';
-import 'api/api_router.dart';
+import 'api/api_router_clean.dart';
 
 /// Main Game API Service - Refactored and streamlined
 class GameApiService {

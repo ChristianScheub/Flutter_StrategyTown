@@ -8,26 +8,26 @@ This document provides examples on how to integrate external clients with the Ga
 
 ```bash
 # Check server status
-curl http://localhost:8080/api/status
+curl http://localhost:8081/api/status
 
 # Get game status
-curl http://localhost:8080/api/game-status
+curl http://localhost:8081/api/game-status
 
 # Start a new game
-curl -X POST http://localhost:8080/api/start-new-game
+curl -X POST http://localhost:8081/api/start-new-game
 
 # Add players
-curl -X POST http://localhost:8080/api/players/add-human/Player1
-curl -X POST http://localhost:8080/api/players/add-ai/AI_Player
+curl -X POST http://localhost:8081/api/players/add-human/Player1
+curl -X POST http://localhost:8081/api/players/add-ai/AI_Player
 
 # List all players
-curl http://localhost:8080/api/players/all
+curl http://localhost:8081/api/players/all
 
 # View map area
-curl http://localhost:8080/api/area-map/10/10/5
+curl http://localhost:8081/api/area-map/10/10/5
 
 # End turn
-curl -X POST http://localhost:8080/api/end-turn
+curl -X POST http://localhost:8081/api/end-turn
 ```
 
 ### Using JavaScript/Fetch API
@@ -48,7 +48,7 @@ async function callGameApi(endpoint, method = 'GET', data = null) {
     options.body = JSON.stringify(data);
   }
   
-  const response = await fetch(`http://localhost:8080/api/${endpoint}`, options);
+  const response = await fetch(`http://localhost:8081/api/${endpoint}`, options);
   const result = await response.json();
   
   if (!response.ok) {
@@ -96,7 +96,7 @@ gameDemo();
 import requests
 
 # Base URL for the API
-BASE_URL = 'http://localhost:8080/api'
+BASE_URL = 'http://localhost:8081/api'
 
 def call_game_api(endpoint, method='GET', data=None):
     """Helper function to call the Game API"""

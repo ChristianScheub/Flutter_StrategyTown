@@ -1,243 +1,211 @@
-# Backend Multiplayer Service
+# Backend Game Service
 
 ## Overview
 
-The `backend_service` component provides robust backend infrastructure for our strategy simulation game, enabling multiplayer functionality, game state persistence, and remote game management. This service bridges the gap between different client instances, allowing players to engage in shared game worlds while maintaining game state consistency.
+The `backend_service` component provides a robust server infrastructure for our strategy simulation game, enabling multiplayer functionality, game state management, and remote game operations. This service acts as a bridge between client instances, allowing players to interact with shared game worlds while maintaining consistent game state.
 
-Built using Dart and the Shelf framework, this backend service exposes a RESTful API that the Flutter frontend can consume for multiplayer sessions. It integrates tightly with the `game_core` library to ensure that game rules and mechanics remain consistent between local and remote play.
+Developed using Dart and the Shelf framework, this backend exposes a RESTful API that can be consumed by any client, including our Flutter frontend. It integrates seamlessly with the `game_core` library to ensure game rules and mechanics remain consistent between local and networked play.
 
-## Key Features
+## Features
 
-- **RESTful Game API** - Comprehensive endpoints for game state manipulation
-- **Multiplayer Session Management** - Creation and coordination of multiplayer games
-- **Game State Synchronization** - Efficient state updates between clients
-- **Authentication & Authorization** - Secure access to game resources
-- **Game Persistence** - Save and restore functionality for multiplayer games
-- **Admin Dashboard** - Browser-based monitoring and management interface
-- **WebSocket Support** - Real-time updates for active games
-- **Logging & Analytics** - Comprehensive game session logging
+- **RESTful API** - Comprehensive endpoints for all game operations
+- **Game State Management** - Centralized handling of game state
+- **Player Management** - Addition and removal of human and AI players
+- **Unit & Building Control** - Commands for creating and managing game entities
+- **Resource Management** - Tracking and allocation of in-game resources
+- **Map Generation** - Dynamic terrain and resource distribution
+- **Turn-Based System** - Structured gameplay progression
+- **Admin Dashboard** - Browser-based monitoring and control interface
+- **Real-time Updates** - Immediate state reflection across clients
+- **Cross-Platform Compatibility** - Works with web, mobile, and desktop clients
 
 ## Architecture
 
-The backend service follows a clean architecture with clear separation of concerns:
+### System Architecture
+The backend follows a layered architecture pattern with clear separation of concerns:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Client Applications                     │
+└───────────────────────────────┬─────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                        HTTP/REST API                        │
+└───────────────────────────────┬─────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       API Router Layer                      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │ Game Routes │  │ Unit Routes │  │ Other Domain Routes │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+└───────────────────────────────┬─────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Handler Layer                          │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │GameHandlers │  │UnitHandlers │  │ Other Domain Handlers│  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+└───────────────────────────────┬─────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Service Layer                           │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              Terminal Game Interface                │    │
+│  └─────────────────────────────────────────────────────┘    │
+└───────────────────────────────┬─────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Domain Layer                           │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │Game Models  │  │Game State   │  │   Game Controller   │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Layer Descriptions
+
+#### API Layer
+- **Router (`api_router.dart`)**: Maps HTTP endpoints to appropriate handlers
+- **Request/Response Handling**: Processes incoming requests and formats responses
+- **Input Validation**: Ensures request data is valid before processing
+- **Error Handling**: Provides consistent error responses
+
+#### Handler Layer
+- **Game Handlers**: Manage game flow and state operations
+- **Unit Handlers**: Process unit-related commands
+- **Building Handlers**: Handle building creation and management
+- **Player Handlers**: Manage player creation and selection
+- **Map Handlers**: Process map-related queries
+
+#### Service Layer
+- **Terminal Game Interface**: Provides a unified interface to the game core
+- **API Responses**: Standardizes response formats
+- **Service Providers**: Leverage Riverpod for dependency injection
+
+#### Domain Layer (game_core)
+- **Game Models**: Define entities like units, buildings, and resources
+- **Game State**: Maintains the current state of the game
+- **Game Controller**: Executes game logic and rule enforcement
+
+### Component Interaction
+
+```
+┌──────────┐         ┌──────────┐         ┌──────────┐         ┌──────────┐
+│  Client  │  HTTP   │   API    │ Method  │ Handler  │ Method  │ Terminal │
+│ Request  ├────────►│  Router  ├────────►│  Layer   ├────────►│   Game   │
+└──────────┘         └──────────┘         └────┬─────┘         │ Interface│
+                                               │               └────┬─────┘
+┌──────────┐         ┌──────────┐         ┌────▼─────┐         ┌────▼─────┐
+│  Client  │◄────────┤ Response │◄────────┤  Result  │◄────────┤   Game   │
+│ Response │  HTTP   │ Formatter│ Data    │ Processor│ Game    │Controller │
+└──────────┘         └──────────┘         └──────────┘ State   └──────────┘
+```
 
 ### Directory Structure
-
 ```
 backend_service/
 ├── bin/                   # Server entry points
 │   └── server.dart        # Main server application
 ├── lib/                   # Core library code
-│   ├── game_api_service.dart  # API route definitions
-│   └── http_utils.dart    # HTTP utilities
-├── docs/                  # Documentation
-│   └── integration_examples.md # Client integration examples
-├── example/               # Example code
-│   └── client_example.dart # Demo API client
+│   ├── game_api_service.dart  # Main API service
+│   └── api/               # API components
+│       ├── api_router.dart    # Route definitions
+│       ├── api_responses.dart # Response utilities
+│       └── handlers/      # Request handlers by domain
 ├── public/                # Static files
 │   └── dashboard.html     # Admin dashboard
 └── scripts/               # Utility scripts
-    ├── run_server.sh      # Start server script
-    └── start_with_deps.sh # Full stack startup script
 ```
 
-### Technical Architecture
+## API Endpoints
 
-The backend implements a layered architecture:
-
-1. **API Layer** - RESTful endpoints and request handling
-2. **Service Layer** - Business logic and game operations
-3. **Domain Layer** - Game state and rules (via game_core)
-4. **Persistence Layer** - State storage and retrieval
-
-#### API Layer
-
-The API layer is built with the Dart Shelf framework and exposes RESTful endpoints for:
-
-- Game session management (`/api/games`)
-- Player actions (`/api/games/{gameId}/actions`)
-- Game state queries (`/api/games/{gameId}/state`)
-- Authentication (`/api/auth`)
-- Administrative functions (`/api/admin`)
-
-Each endpoint follows RESTful principles with appropriate HTTP methods:
-- GET for retrieval
-- POST for creation
-- PUT for updates
-- DELETE for removal
-
-#### Service Layer
-
-The service layer contains the core business logic:
-
-- **GameService** - Manages game sessions
-- **ActionService** - Processes player actions
-- **AuthService** - Handles authentication
-- **PersistenceService** - Manages game state storage
-
-This layer translates API requests into operations on the domain model.
-
-#### Domain Layer
-
-The domain layer leverages the game_core library to:
-
-- Validate game actions
-- Apply game rules
-- Update game state
-- Calculate outcomes
-
-By using the shared game_core, we ensure consistent behavior between frontend and backend.
-
-#### Persistence Layer
-
-Game state is persisted through:
-
-- In-memory cache for active games
-- File-based storage for saved games
-- Optional database integration for production environments
-
-### Request Flow Diagram
-
-```
-Client Request → API Endpoint → Service Layer → Domain Logic → Response
-     ↑                                  ↓
-     └──────── State Updates ───────────┘
-```
-
-### Multiplayer Architecture
-
-The multiplayer system uses a hybrid of:
-
-1. **HTTP REST API** - For discrete actions and state queries
-2. **WebSockets** - For real-time updates and notifications
-3. **Polling** - As a fallback for environments without WebSocket support
-
-This provides flexibility while maintaining responsiveness.
-
-## API Documentation
-
-The backend provides a comprehensive API for game interaction. Key endpoints include:
+The backend service exposes the following RESTful endpoints:
 
 ### Game Management
-
-```
-GET    /api/games               # List available games
-POST   /api/games               # Create new game
-GET    /api/games/{id}          # Get game details
-DELETE /api/games/{id}          # Delete game
-```
-
-### Game Actions
-
-```
-POST   /api/games/{id}/actions/move      # Move a unit
-POST   /api/games/{id}/actions/build     # Build structure
-POST   /api/games/{id}/actions/end-turn  # End current turn
-```
+- `GET /api/new-game` - Create a new game instance
+- `GET /api/reset-game` - Reset the current game to initial state
+- `GET /api/game-state` - Get the current game state
+- `GET /api/end-turn` - End the current player's turn
 
 ### Player Management
+- `GET /api/add-human-player` - Add a human player to the game
+- `GET /api/add-ai-player` - Add an AI player to the game
+- `GET /api/current-player` - Get the current active player's ID
+- `GET /api/list-players` - List all players in the game
 
-```
-GET    /api/games/{id}/players           # List players
-POST   /api/games/{id}/players           # Add player
-DELETE /api/games/{id}/players/{playerId} # Remove player
-```
+### Unit Management
+- `GET /api/list-player-units` - Get list of current player's units (returns structured JSON with unit IDs, positions, and types)
+- `GET /api/get-player-units` - Get detailed information about player units (backward compatibility endpoint)
+- `POST /api/move-unit` - Move a unit to a new position
+- `POST /api/attack` - Command a unit to attack a target
+- `POST /api/create-unit` - Create a new unit for a player
+- `POST /api/give-starting-units` - Initialize a player with starting units
 
-### Game State
+### Map Management
+- `GET /api/map-state` - Get the current map configuration
+- `GET /api/terrain-at` - Get terrain information at a specific position
 
-```
-GET    /api/games/{id}/state             # Full game state
-GET    /api/games/{id}/state/resources   # Resource status
-GET    /api/games/{id}/state/map         # Map data
-```
+## Available Scripts
 
-For complete API documentation, please refer to the `BACKEND_API.md` file in the project root.
+### Development Scripts
+- `run_server.sh`: Starts the game backend server
+  ```bash
+  ./run_server.sh
+  ```
 
-## Setup and Deployment
+- `start_with_deps.sh`: Starts the server with all dependencies
+  ```bash
+  ./start_with_deps.sh
+  ```
 
-### Prerequisites
-
-- Dart SDK 2.17.0 or higher
-- Dependencies as listed in pubspec.yaml
-
-### Local Development
-
-```bash
-# Navigate to backend directory
-cd backend_service
-
-# Get dependencies
-dart pub get
-
-# Run the server locally
-./run_server.sh
-```
-
-By default, the server runs on port 8080 and accepts connections from localhost.
-
-### Configuration
-
-The server can be configured through environment variables:
-
-- `PORT` - Server port (default: 8080)
-- `HOST` - Bind address (default: localhost)
-- `STORAGE_PATH` - Path for saved games
-- `LOG_LEVEL` - Logging verbosity
-
-### Docker Deployment
-
-A Dockerfile is provided for containerized deployment:
-
+### Running in Production
+For production deployment, we recommend using Docker:
 ```bash
 # Build the Docker image
 docker build -t game-backend .
 
 # Run the container
-docker run -p 8080:8080 game-backend
+docker run -p 8081:8081 game-backend
 ```
 
-## Testing
+## Libraries Used
 
-The backend includes comprehensive tests:
+### Core Dependencies
+- **Shelf**: HTTP server framework for Dart
+  - `shelf`: Base server functionality
+  - `shelf_router`: Route handling and URL mapping
+  - `shelf_static`: Static file serving
 
-```bash
-# Run unit tests
-dart test
+### State Management
+- **Riverpod**: Dependency injection and state management
+  - Used for providing game services and maintaining state
 
-# Run integration tests
-dart test integration_test
-```
+### Game Engine
+- **game_core**: Custom game logic and state management library
+  - Handles game rules, mechanics, and entity management
+  - Shared between frontend and backend for consistency
 
-## Monitoring
-
-The backend includes a simple web dashboard for monitoring:
-
-1. Start the server
-2. Navigate to http://localhost:8080/dashboard.html
-3. View active games, player counts, and server metrics
-
-## Security Considerations
-
-- Authentication via API keys for production use
-- Input validation on all endpoints
-- Rate limiting to prevent abuse
-- CORS configuration for frontend access
-
-## License
-
-This backend service is part of the main project and shares the same license.
-- `start_with_deps.sh` - Script to start server with dependencies
+### Utilities
+- **path**: File path manipulation
+- **http**: HTTP client for testing
+- **logging**: Structured logging capabilities
+- **json_serializable**: JSON serialization/deserialization
 
 ## Getting Started
-1. Install dependencies (if any):
-   ```sh
-   # Add dependency installation steps here if needed
-   ```
-2. Run the server:
-   ```sh
+
+1. Ensure you have Dart SDK 2.17.0 or later installed
+2. Navigate to the backend_service directory
+3. Run the server:
+   ```bash
    ./run_server.sh
    ```
+4. The server will start on port 8081 by default
+5. Access the dashboard at http://localhost:8081/dashboard
+6. Use API endpoints at http://localhost:8081/api/
 
-## Notes
-- See `docs/integration_examples.md` for API usage examples.
-- See `BACKEND_API.md` in the root for API documentation.
+For API documentation, see the `docs/integration_examples.md` file for usage examples.
