@@ -103,9 +103,8 @@ Middleware _corsHeaders() {
 
 // Handle index/dashboard requests
 Response _serveIndex(Request request) {
-  final scriptPath = Platform.script.toFilePath();
-  final scriptDir = Directory(scriptPath).parent.path;
-  final indexFile = File('$scriptDir/../public/dashboard.html');
+  final indexFile = File('public/dashboard.html');
+
   
   if (indexFile.existsSync()) {
     return Response.ok(
@@ -123,9 +122,7 @@ Response _serveIndex(Request request) {
 
 // Serve static files from public directory
 Response _serveStatic(Request request, String file) {
-  final scriptPath = Platform.script.toFilePath();
-  final scriptDir = Directory(scriptPath).parent.path;
-  final staticFile = File('$scriptDir/../public/$file');
+  final staticFile = File('public/$file');
   
   if (staticFile.existsSync()) {
     String contentType = 'text/plain';
