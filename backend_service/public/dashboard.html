@@ -100,6 +100,9 @@
                 <button onclick="callApi('players/all', 'GET')">List All Players</button>
                 <button onclick="callApi('players/current', 'GET')">Current Player</button>
                 <button onclick="callApi('scoreboard', 'GET')">Scoreboard</button>
+                <!-- Live Scoreboard Controls -->
+                <button onclick="startTicker()" id="startTickerBtn">Start Live Score</button>
+                <button onclick="stopTicker()" id="stopTickerBtn" disabled>Stop Live Score</button>
                 <div class="action-group">
                     <button onclick="addHumanPlayer()">Add Human Player</button>
                 </div>
@@ -114,6 +117,10 @@
             <div class="group">
                 <h3>Units & Buildings</h3>
                 <button onclick="callApi('units', 'GET')">List Units</button>
+                <div class="action-group">
+                    <input type="text" id="playerUnitsId" placeholder="Player ID" style="width: 100px">
+                    <button onclick="getPlayerUnits()">Get Player Units</button>
+                </div>
                 <button onclick="callApi('buildings', 'GET')">List Buildings</button>
                 <div class="action-group">
                     <input type="text" id="unitId" placeholder="Unit ID">
@@ -233,7 +240,7 @@ Click any button to see the API response here.</pre>
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:8080/api';
+        const API_BASE = 'http://localhost:8080';
         const outputEl = document.getElementById('output');
         
         // Function to call the API
@@ -271,6 +278,15 @@ Click any button to see the API response here.</pre>
         }
         
         // Helper functions for specific actions
+        function getPlayerUnits() {
+            const playerId = document.getElementById('playerUnitsId').value.trim();
+            if (playerId) {
+                callApi(`units/${playerId}`, 'GET');
+            } else {
+                alert('Please enter a Player ID');
+            }
+        }
+        
         function addHumanPlayer() {
             const name = prompt('Enter player name:', 'Player1');
             if (name) {
@@ -507,8 +523,25 @@ Click any button to see the API response here.</pre>
             }
         }
 
+        let scoreboardInterval = null;
 
+        function startTicker() {
+            if (scoreboardInterval) {
+                return;
+            }
+            scoreboardInterval = setInterval(() => {
+                callApi('scoreboard', 'GET');
+            }, 5000);
+            document.getElementById('startTickerBtn').disabled = true;
+            document.getElementById('stopTickerBtn').disabled = false;
+        }
 
-   </script>    </script>
+        function stopTicker() {
+            clearInterval(scoreboardInterval);
+            scoreboardInterval = null;
+            document.getElementById('startTickerBtn').disabled = false;
+            document.getElementById('stopTickerBtn').disabled = true;
+        }
+    </script>
 </body>
 </html>

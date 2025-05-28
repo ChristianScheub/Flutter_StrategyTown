@@ -1,10 +1,38 @@
 import 'dart:io';
 
 import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../lib/game_api_service.dart';
+
+
+shelf.Middleware customLogMiddleware() {
+  return (shelf.Handler innerHandler) {
+    return (shelf.Request request) async {
+      final skipLogging = [
+        'api/scoreboard',
+        'api/detailed-game-status',
+        'api/game-status'
+      ];
+      
+      final currentPath = request.url.path;
+      if (skipLogging.any((path) => currentPath == path)) {
+        return await innerHandler(request);
+      }
+      
+      final startTime = DateTime.now();
+      final response = await innerHandler(request);
+      final duration = DateTime.now().difference(startTime);
+      
+      print('${request.method}\t[${response.statusCode}] ${request.url.path}'
+            ' (${duration.inMilliseconds}ms)');
+            
+      return response;
+    };
+  };
+}
 
 void main(List<String> args) async {
   print('Initializing Game Backend Server...');
@@ -38,7 +66,7 @@ void main(List<String> args) async {
   
   // Create a handler for the server with middleware
   final handler = Pipeline()
-      .addMiddleware(logRequests()) // Log requests
+      .addMiddleware(customLogMiddleware()) // Log requests
       .addMiddleware(_corsHeaders()) // Handle CORS
       .addHandler(router);
 
@@ -75,7 +103,10 @@ Middleware _corsHeaders() {
 
 // Handle index/dashboard requests
 Response _serveIndex(Request request) {
-  final indexFile = File('public/dashboard.html');
+  final scriptPath = Platform.script.toFilePath();
+  final scriptDir = Directory(scriptPath).parent.path;
+  final indexFile = File('$scriptDir/../public/dashboard.html');
+  
   if (indexFile.existsSync()) {
     return Response.ok(
       indexFile.readAsBytesSync(),
@@ -92,7 +123,10 @@ Response _serveIndex(Request request) {
 
 // Serve static files from public directory
 Response _serveStatic(Request request, String file) {
-  final staticFile = File('public/$file');
+  final scriptPath = Platform.script.toFilePath();
+  final scriptDir = Directory(scriptPath).parent.path;
+  final staticFile = File('$scriptDir/../public/$file');
+  
   if (staticFile.existsSync()) {
     String contentType = 'text/plain';
     if (file.endsWith('.html')) contentType = 'text/html';

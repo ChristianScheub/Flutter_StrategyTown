@@ -19,96 +19,239 @@ class GameApiService {
       // Initialize game service
       final initService = container.read(initGameForGuiServiceProvider);
       
-      // Start a single player game with defaults
-      // Initialize with the correct named parameter
-      final success = initService.initSinglePlayerGame(humanPlayerName: 'Player1');
+      // Start an empty game
+      final gameController = container.read(gameControllerProvider);
+      gameController.startNewGame();
       
-      if (!success) {
-        print('Warning: Failed to initialize single player game');
-      }
+      print('Game initialized successfully');
     } catch (e) {
       print('Error in game initialization: $e');
       rethrow;
     }
   }
 
+  // Add logging method for API calls
+  void _logApiCall(String method, String path, Map<String, String> pathParams, [Map<String, dynamic>? bodyParams]) {
+    // Skip logging for certain endpoints that generate too much noise
+    final skipLogging = [
+      '/scoreboard',
+      '/detailed-game-status'
+    ];
+    
+    if (skipLogging.any((endpoint) => path.contains(endpoint))) {
+      return;
+    }
+    
+    try {
+      final gameController = container.read(gameControllerProvider);
+      final gameState = gameController.currentGameState;
+      
+      final currentPlayer = gameState.playerManager.getPlayer(gameState.currentPlayerId);
+      final playerInfo = currentPlayer != null 
+          ? '${currentPlayer.name} (${gameState.currentPlayerId})' 
+          : 'Unknown Player (${gameState.currentPlayerId})';
+      
+      final timestamp = DateTime.now().toIso8601String();
+      
+      print('=== API CALL LOG ===');
+      print('Timestamp: $timestamp');
+      print('Method: $method');
+      print('Path: $path');
+      print('Triggered by Player: $playerInfo');
+      print('Turn: ${gameState.turn}');
+      
+      if (pathParams.isNotEmpty) {
+        print('Path Parameters: $pathParams');
+      }
+      
+      if (bodyParams != null && bodyParams.isNotEmpty) {
+        print('Body Parameters: $bodyParams');
+      }
+      
+      print('==================');
+    } catch (e) {
+      print('Error logging API call: $e');
+    }
+  }
+
+  // Middleware function to log all requests
+  Handler _loggingMiddleware(Handler innerHandler) {
+    return (Request request) async {
+      final method = request.method;
+      final path = request.url.path;
+      
+      // Extract path parameters
+      final pathParams = <String, String>{};
+      final pathSegments = request.url.pathSegments;
+      
+      // Extract body parameters if present
+      Map<String, dynamic>? bodyParams;
+      if (request.method == 'POST' || request.method == 'PUT') {
+        try {
+          final body = await request.readAsString();
+          if (body.isNotEmpty) {
+            bodyParams = json.decode(body) as Map<String, dynamic>?;
+          }
+        } catch (e) {
+          // Body might not be JSON, that's okay
+        }
+      }
+      
+      // Extract query parameters
+      final queryParams = request.url.queryParameters;
+      if (queryParams.isNotEmpty) {
+        pathParams.addAll(queryParams);
+      }
+      
+      // Log the API call
+      _logApiCall(method, path, pathParams, bodyParams);
+      
+      // Continue with the original handler
+      return await innerHandler(request);
+    };
+  }
+
   Router get router {
     final router = Router();
 
     // === Server Status ===
-    router.get('/status', _getStatus);
+    router.get('/status', (Request request) => _loggedHandler(request, 'GET', '/status', {}, _getStatus));
 
     // === Game Information ===
-    router.get('/game-status', _getGameStatus);
-    router.get('/detailed-game-status', _getDetailedGameStatus);
-    router.get('/available-actions', _getAvailableActions);
+    router.get('/game-status', (Request request) => _loggedHandler(request, 'GET', '/game-status', {}, _getGameStatus));
+    router.get('/detailed-game-status', (Request request) => _loggedHandler(request, 'GET', '/detailed-game-status', {}, _getDetailedGameStatus));
+    router.get('/available-actions', (Request request) => _loggedHandler(request, 'GET', '/available-actions', {}, _getAvailableActions));
     
     // === Unit Management ===
-    router.get('/units', _listPlayerUnits);
-    router.get('/units/<playerId>', _getPlayerUnits);
-    router.post('/units/select/<unitId>', _selectUnit);
-    router.post('/units/move/<unitId>/<x>/<y>', _moveUnit);
-    router.post('/units/move-from-position/<fromX>/<fromY>/<toX>/<toY>', _moveUnitAtPosition);
-    router.post('/units/attack/<unitId>/<targetX>/<targetY>', _attack);
-    router.post('/units/harvest', _harvestResource);
+    router.get('/units', (Request request) => _loggedHandler(request, 'GET', '/units', {}, _listPlayerUnits));
+    router.get('/units/<playerId>', (Request request, String playerId) => 
+        _loggedHandler(request, 'GET', '/units/<playerId>', {'playerId': playerId}, (req) => _getPlayerUnits(req, playerId)));
+    router.post('/units/select/<unitId>', (Request request, String unitId) => 
+        _loggedHandler(request, 'POST', '/units/select/<unitId>', {'unitId': unitId}, (req) => _selectUnit(req, unitId)));
+    router.post('/units/move/<unitId>/<x>/<y>', (Request request, String unitId, String x, String y) => 
+        _loggedHandler(request, 'POST', '/units/move/<unitId>/<x>/<y>', {'unitId': unitId, 'x': x, 'y': y}, (req) => _moveUnit(req, unitId, x, y)));
+    router.post('/units/move-from-position/<fromX>/<fromY>/<toX>/<toY>', (Request request, String fromX, String fromY, String toX, String toY) => 
+        _loggedHandler(request, 'POST', '/units/move-from-position/<fromX>/<fromY>/<toX>/<toY>', 
+            {'fromX': fromX, 'fromY': fromY, 'toX': toX, 'toY': toY}, (req) => _moveUnitAtPosition(req, fromX, fromY, toX, toY)));
+    router.post('/units/attack/<unitId>/<targetX>/<targetY>', (Request request, String unitId, String targetX, String targetY) => 
+        _loggedHandler(request, 'POST', '/units/attack/<unitId>/<targetX>/<targetY>', 
+            {'unitId': unitId, 'targetX': targetX, 'targetY': targetY}, (req) => _attack(req, unitId, targetX, targetY)));
+    router.post('/units/harvest', (Request request) => _loggedHandler(request, 'POST', '/units/harvest', {}, _harvestResource));
     
     // === Building Management ===
-    router.get('/buildings', _listPlayerBuildings);
-    router.get('/buildings/<playerId>', _getPlayerBuildings);
-    router.post('/buildings/select/<buildingId>', _selectBuilding);
-    router.post('/buildings/upgrade', _upgradeBuilding);
-    router.post('/buildings/build/<type>/<x>/<y>', _buildBuilding);
-    router.post('/buildings/build-at-position/<x>/<y>', _buildBuildingAtPosition);
+    router.get('/buildings', (Request request) => _loggedHandler(request, 'GET', '/buildings', {}, _listPlayerBuildings));
+    router.get('/buildings/<playerId>', (Request request, String playerId) => 
+        _loggedHandler(request, 'GET', '/buildings/<playerId>', {'playerId': playerId}, (req) => _getPlayerBuildings(req, playerId)));
+    router.post('/buildings/select/<buildingId>', (Request request, String buildingId) => 
+        _loggedHandler(request, 'POST', '/buildings/select/<buildingId>', {'buildingId': buildingId}, (req) => _selectBuilding(req, buildingId)));
+    router.post('/buildings/upgrade', (Request request) => _loggedHandler(request, 'POST', '/buildings/upgrade', {}, _upgradeBuilding));
+    router.post('/buildings/build/<type>/<x>/<y>', (Request request, String type, String x, String y) => 
+        _loggedHandler(request, 'POST', '/buildings/build/<type>/<x>/<y>', {'type': type, 'x': x, 'y': y}, (req) => _buildBuilding(req, type, x, y)));
+    router.post('/buildings/build-at-position/<x>/<y>', (Request request, String x, String y) => 
+        _loggedHandler(request, 'POST', '/buildings/build-at-position/<x>/<y>', {'x': x, 'y': y}, (req) => _buildBuildingAtPosition(req, x, y)));
     
     // === Building with Specific Units ===
-    router.post('/buildings/build-with-unit/<unitId>/<typeStr>/<x>/<y>', _buildWithSpecificUnit);
+    router.post('/buildings/build-with-unit/<unitId>/<typeStr>/<x>/<y>', (Request request, String unitId, String typeStr, String x, String y) => 
+        _loggedHandler(request, 'POST', '/buildings/build-with-unit/<unitId>/<typeStr>/<x>/<y>', 
+            {'unitId': unitId, 'typeStr': typeStr, 'x': x, 'y': y}, (req) => _buildWithSpecificUnit(req, unitId, typeStr, x, y)));
     
     // === Quick Build Actions ===
-    router.post('/quick-build/farm/<unitId>', _buildFarm);
-    router.post('/quick-build/lumber-camp/<unitId>', _buildLumberCamp);
-    router.post('/quick-build/mine/<unitId>', _buildMine);
-    router.post('/quick-build/barracks/<unitId>', _buildBarracks);
-    router.post('/quick-build/defensive-tower/<unitId>', _buildDefensiveTower);
-    router.post('/quick-build/wall/<unitId>', _buildWall);
+    router.post('/quick-build/farm/<unitId>', (Request request, String unitId) => 
+        _loggedHandler(request, 'POST', '/quick-build/farm/<unitId>', {'unitId': unitId}, (req) => _buildFarm(req, unitId)));
+    router.post('/quick-build/lumber-camp/<unitId>', (Request request, String unitId) => 
+        _loggedHandler(request, 'POST', '/quick-build/lumber-camp/<unitId>', {'unitId': unitId}, (req) => _buildLumberCamp(req, unitId)));
+    router.post('/quick-build/mine/<unitId>', (Request request, String unitId) => 
+        _loggedHandler(request, 'POST', '/quick-build/mine/<unitId>', {'unitId': unitId}, (req) => _buildMine(req, unitId)));
+    router.post('/quick-build/barracks/<unitId>', (Request request, String unitId) => 
+        _loggedHandler(request, 'POST', '/quick-build/barracks/<unitId>', {'unitId': unitId}, (req) => _buildBarracks(req, unitId)));
+    router.post('/quick-build/defensive-tower/<unitId>', (Request request, String unitId) => 
+        _loggedHandler(request, 'POST', '/quick-build/defensive-tower/<unitId>', {'unitId': unitId}, (req) => _buildDefensiveTower(req, unitId)));
+    router.post('/quick-build/wall/<unitId>', (Request request, String unitId) => 
+        _loggedHandler(request, 'POST', '/quick-build/wall/<unitId>', {'unitId': unitId}, (req) => _buildWall(req, unitId)));
     
     // === Training Units ===
-    router.post('/train-unit/<unitType>/<buildingId>', _trainUnit);
-    router.post('/train-unit-generic/<unitType>', _trainUnitGeneric);
-    router.post('/select-unit-to-train/<unitType>', _selectUnitToTrain);
-    router.post('/select-building-to-build/<buildingType>', _selectBuildingToBuild);
+    router.post('/train-unit/<unitType>/<buildingId>', (Request request, String unitType, String buildingId) => 
+        _loggedHandler(request, 'POST', '/train-unit/<unitType>/<buildingId>', 
+            {'unitType': unitType, 'buildingId': buildingId}, (req) => _trainUnit(req, unitType, buildingId)));
+    router.post('/train-unit-generic/<unitType>', (Request request, String unitType) => 
+        _loggedHandler(request, 'POST', '/train-unit-generic/<unitType>', {'unitType': unitType}, (req) => _trainUnitGeneric(req, unitType)));
+    router.post('/select-unit-to-train/<unitType>', (Request request, String unitType) => 
+        _loggedHandler(request, 'POST', '/select-unit-to-train/<unitType>', {'unitType': unitType}, (req) => _selectUnitToTrain(req, unitType)));
+    router.post('/select-building-to-build/<buildingType>', (Request request, String buildingType) => 
+        _loggedHandler(request, 'POST', '/select-building-to-build/<buildingType>', {'buildingType': buildingType}, (req) => _selectBuildingToBuild(req, buildingType)));
     
     // === Map and Tile Information ===
-    router.get('/tile-info/<x>/<y>', _getTileInfo);
-    router.get('/tile-resources/<x>/<y>', _getTileResources);
-    router.get('/area-map/<centerX>/<centerY>/<radius>', _getAreaMap);
-    router.post('/select-tile/<x>/<y>', _selectTile);
+    router.get('/tile-info/<x>/<y>', (Request request, String x, String y) => 
+        _loggedHandler(request, 'GET', '/tile-info/<x>/<y>', {'x': x, 'y': y}, (req) => _getTileInfo(req, x, y)));
+    router.get('/tile-resources/<x>/<y>', (Request request, String x, String y) => 
+        _loggedHandler(request, 'GET', '/tile-resources/<x>/<y>', {'x': x, 'y': y}, (req) => _getTileResources(req, x, y)));
+    router.get('/area-map/<centerX>/<centerY>/<radius>', (Request request, String centerX, String centerY, String radius) => 
+        _loggedHandler(request, 'GET', '/area-map/<centerX>/<centerY>/<radius>', 
+            {'centerX': centerX, 'centerY': centerY, 'radius': radius}, (req) => _getAreaMap(req, centerX, centerY, radius)));
+    router.post('/select-tile/<x>/<y>', (Request request, String x, String y) => 
+        _loggedHandler(request, 'POST', '/select-tile/<x>/<y>', {'x': x, 'y': y}, (req) => _selectTile(req, x, y)));
     
     // === Game Flow ===
-    router.post('/end-turn', _endTurn);
-    router.post('/clear-selection', _clearSelection);
-    router.post('/found-city', _foundCity);
+    router.post('/end-turn', (Request request) => _loggedHandler(request, 'POST', '/end-turn', {}, _endTurn));
+    router.post('/clear-selection', (Request request) => _loggedHandler(request, 'POST', '/clear-selection', {}, _clearSelection));
+    router.post('/found-city', (Request request) => _loggedHandler(request, 'POST', '/found-city', {}, _foundCity));
     
     // === Camera Controls ===
-    router.post('/jump-to-first-city', _jumpToFirstCity);
-    router.post('/jump-to-enemy-hq', _jumpToEnemyHeadquarters);
+    router.post('/jump-to-first-city', (Request request) => _loggedHandler(request, 'POST', '/jump-to-first-city', {}, _jumpToFirstCity));
+    router.post('/jump-to-enemy-hq', (Request request) => _loggedHandler(request, 'POST', '/jump-to-enemy-hq', {}, _jumpToEnemyHeadquarters));
     
     // === Game Management ===
-    router.post('/start-new-game', _startNewGame);
+    router.post('/start-new-game', (Request request) => _loggedHandler(request, 'POST', '/start-new-game', {}, _startNewGame));
     
     // === Player Management ===
-    router.get('/players/all', _listAllPlayers);
-    router.get('/players/current', _getCurrentPlayer);
-    router.get('/player-statistics/<playerId>', _getPlayerStatistics);
-    router.get('/scoreboard', _getScoreboard);
-    router.post('/players/add-human/<name>', _addHumanPlayer);
-    router.post('/players/add-ai/<name>', _addAIPlayer);
-    router.delete('/players/remove/<playerId>', _removePlayer);
+    router.get('/players/all', (Request request) => _loggedHandler(request, 'GET', '/players/all', {}, _listAllPlayers));
+    router.get('/players/current', (Request request) => _loggedHandler(request, 'GET', '/players/current', {}, _getCurrentPlayer));
+    router.get('/player-statistics/<playerId>', (Request request, String playerId) => 
+        _loggedHandler(request, 'GET', '/player-statistics/<playerId>', {'playerId': playerId}, (req) => _getPlayerStatistics(req, playerId)));
+    router.get('/scoreboard', (Request request) => _loggedHandler(request, 'GET', '/scoreboard', {}, _getScoreboard));
+    router.post('/players/add-human/<name>', (Request request, String name) => 
+        _loggedHandler(request, 'POST', '/players/add-human/<name>', {'name': name}, (req) => _addHumanPlayer(req, name)));
+    router.post('/players/add-ai/<name>', (Request request, String name) => 
+        _loggedHandler(request, 'POST', '/players/add-ai/<name>', {'name': name}, (req) => _addAIPlayer(req, name)));
+    router.delete('/players/remove/<playerId>', (Request request, String playerId) => 
+        _loggedHandler(request, 'DELETE', '/players/remove/<playerId>', {'playerId': playerId}, (req) => _removePlayer(req, playerId)));
     
     // === Multiplayer Controls ===
-    router.post('/switch-player', _switchPlayer);
-    router.post('/switch-to-player/<playerId>', _switchToPlayer);
+    router.post('/switch-player', (Request request) => _loggedHandler(request, 'POST', '/switch-player', {}, _switchPlayer));
+    router.post('/switch-to-player/<playerId>', (Request request, String playerId) => 
+        _loggedHandler(request, 'POST', '/switch-to-player/<playerId>', {'playerId': playerId}, (req) => _switchToPlayer(req, playerId)));
 
     return router;
+  }
+
+  // Generic logged handler wrapper
+  Future<Response> _loggedHandler(Request request, String method, String path, Map<String, String> params, Function(Request) handler) async {
+    // Skip logging for certain endpoints
+    final skipLogging = [
+      '/scoreboard',
+      '/detailed-game-status'
+    ];
+    
+    if (!skipLogging.any((endpoint) => path.contains(endpoint))) {
+      // Extract body parameters if present
+      Map<String, dynamic>? bodyParams;
+      if (request.method == 'POST' || request.method == 'PUT') {
+        try {
+          final body = await request.readAsString();
+          if (body.isNotEmpty) {
+            bodyParams = json.decode(body) as Map<String, dynamic>?;
+          }
+        } catch (e) {
+          // Body might not be JSON, that's okay
+        }
+      }
+      
+      // Log the API call with parameters
+      _logApiCall(method, path, params, bodyParams);
+    }
+    
+    // Execute the handler
+    return handler(request);
   }
 
   // === Helper Methods ===
@@ -121,25 +264,25 @@ class GameApiService {
     );
   }
   
-  Response _successResponse(String message, [Map<String, dynamic>? additionalData]) {
-    final response = {
-      'success': true,
-      'message': message,
-      if (additionalData != null) ...additionalData,
-    };
-    return _jsonResponse(json.encode(response));
+  Response _successResponse(String message, [Map<String, dynamic>? data]) {
+    final Map<String, Object> response = {'success': true, 'message': message};
+    if (data != null) {
+      response.addAll(data.map((key, value) => MapEntry(key, value as Object)));
+    }
+    return Response.ok(
+      jsonEncode(response),
+      headers: {'content-type': 'application/json'}
+    );
   }
   
   Response _errorResponse(String message, [int statusCode = 400]) {
     return Response(
       statusCode,
-      body: json.encode({
+      body: jsonEncode({
         'success': false,
         'error': message,
       }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'content-type': 'application/json'}
     );
   }
   
@@ -166,8 +309,46 @@ class GameApiService {
   
   // === Unit Management ===
   Response _listPlayerUnits(Request request) {
-    final units = gameInterface.listPlayerUnits();
-    return _successResponse('Player units retrieved', {'units': units});
+    try {
+      final gameController = container.read(gameControllerProvider);
+      final gameState = gameController.currentGameState;
+      var currentPlayerId = gameInterface.getCurrentPlayer();
+      
+      // Check if we have any players, if not initialize one
+      if (gameState.playerManager.playerCount == 0) {
+        print('No players found, initializing a new player...');
+        gameInterface.addHumanPlayer("Player 1");
+        // Initialize starting units for the new player
+        final initService = container.read(initGameForGuiServiceProvider);
+        initService.giveStartingUnitsToAllPlayers();
+        // Update current player ID after initialization
+        currentPlayerId = gameInterface.getCurrentPlayer();
+      }
+      
+      if (currentPlayerId.isEmpty) {
+        return _errorResponse('Current player not found', 404);
+      }
+      
+      // Get all units that belong to the current player
+      final playerUnits = gameState.units
+          .where((unit) => unit.ownerID == currentPlayerId)
+          .map((unit) => {
+            'id': unit.id,
+            'type': unit.type.toString(),
+            'position': {'x': unit.position.x, 'y': unit.position.y},
+          })
+          .toList();
+      
+      return _successResponse('Player units retrieved', {
+        'units': playerUnits,
+        'currentPlayerId': currentPlayerId,
+        'playerCount': gameState.playerManager.playerCount,
+        'players': gameState.playerManager.players.keys.toList(),
+      });
+    } catch (e) {
+      print('Error in _listPlayerUnits: $e');
+      return _errorResponse('Error retrieving player units: $e');
+    }
   }
   
   Response _getPlayerUnits(Request request, String playerId) {
@@ -843,8 +1024,31 @@ class GameApiService {
       final centerX = int.parse(centerXStr);
       final centerY = int.parse(centerYStr);
       final radius = int.parse(radiusStr);
-      final result = gameInterface.getAreaMap(centerX, centerY, radius: radius);
-      return _successResponse('Area map retrieved', {'map': result});
+      // Raw ASCII map from game interface
+      final raw = gameInterface.getAreaMap(centerX, centerY, radius: radius);
+      // Split lines
+      final lines = raw.split('\n');
+      // Extract rows between pipes
+      final rowLines = lines.where((l) => l.contains('|')).toList();
+      final grid = rowLines.map((l) {
+        final parts = l.split('|');
+        if (parts.length >= 2) {
+          return parts[1].split('');
+        }
+        return <String>[];
+      }).toList();
+      // Extract legend lines after blank line
+      final legendIndex = lines.indexWhere((l) => l.trim().startsWith('LEGEND:'));
+      final legend = legendIndex >= 0
+        ? lines.skip(legendIndex + 1).where((l) => l.trim().isNotEmpty).toList()
+        : <String>[];
+      return _successResponse('Area map retrieved', {
+        'centerX': centerX,
+        'centerY': centerY,
+        'radius': radius,
+        'grid': grid,
+        'legend': legend,
+      });
     } catch (e) {
       return _errorResponse('Invalid map parameters: $e');
     }
@@ -982,51 +1186,101 @@ class GameApiService {
   }
   
   Response _getScoreboard(Request request) {
-    // Get the game controller to access game state
-    final gameController = container.read(gameControllerProvider);
-    final gameState = gameController.currentGameState;
-    final players = gameState.getAllPlayerIDs();
-    
-    if (players.isEmpty) {
-      return _errorResponse('No players found', 404);
-    }
-    
-    // Collect detailed statistics for each player
-    final List<Map<String, dynamic>> scoreboardData = [];
-    
-    for (final playerId in players) {
-      final stats = gameState.getPlayerStatistics()[playerId];
-      final player = gameState.playerManager.getPlayer(playerId);
+    try {
+      final gameController = container.read(gameControllerProvider);
+      final gameState = gameController.currentGameState;
       
-      if (stats != null && player != null) {
-        scoreboardData.add({
-          'id': playerId,
-          'name': player.name,
-          'score': player.points,
-          'type': gameState.isHumanPlayer(playerId) ? 'Human' : 'AI',
-          'isCurrentPlayer': playerId == gameState.currentPlayerId,
-          'units': stats['units'] ?? 0,
-          'buildings': stats['buildings'] ?? 0,
-          'settlements': stats['settlements'] ?? 0,
-          'resources': gameState.getPlayerResources(playerId).toJson(),
+      // Check if we have any players, if not initialize one
+      if (gameState.playerManager.playerCount == 0) {
+        print('No players found, initializing a new player for scoreboard...');
+        gameInterface.addHumanPlayer("Player 1");
+        
+        // Initialize starting units for the new player
+        final initService = container.read(initGameForGuiServiceProvider);
+        initService.giveStartingUnitsToAllPlayers();
+        
+        // Get the final state after initialization
+        final finalGameState = gameController.currentGameState;
+        
+        // Prepare scoreboard data for the new player
+        final playerId = finalGameState.currentPlayerId;
+        final resources = finalGameState.getPlayerResources(playerId);
+        final units = finalGameState.units.where((u) => u.ownerID == playerId).length;
+        final buildings = finalGameState.buildings.where((b) => b.ownerID == playerId).length;
+        final points = ScoreService.getPlayerPoints(finalGameState, playerId);
+        
+        return _successResponse('New player initialized and scoreboard retrieved', {
+          'scoreboard': [{
+            'playerId': playerId,
+            'name': finalGameState.playerManager.getPlayer(playerId)?.name ?? "Player 1",
+            'points': points,
+            'resources': resources.toJson(),
+            'unitCount': units,
+            'buildingCount': buildings,
+          }],
+          'playerCount': 1,
+          'turnCount': finalGameState.turn,
         });
       }
+      
+      // Get all players and their scores
+      final scoreboard = gameState.playerManager.players.entries.map((entry) {
+        final playerId = entry.key;
+        final player = gameState.playerManager.getPlayer(playerId);
+        final resources = gameState.getPlayerResources(playerId);
+        final units = gameState.units.where((u) => u.ownerID == playerId).length;
+        final buildings = gameState.buildings.where((b) => b.ownerID == playerId).length;
+        final points = ScoreService.getPlayerPoints(gameState, playerId);
+        
+        return {
+          'playerId': playerId,
+          'name': player?.name ?? "Unknown Player",
+          'points': points,
+          'resources': resources.toJson(),
+          'unitCount': units,
+          'buildingCount': buildings,
+          'isHuman': player?.isHuman ?? false,
+          'isCurrent': playerId == gameState.currentPlayerId,
+        };
+      }).toList();
+      
+      // Sort scoreboard by points in descending order
+      scoreboard.sort((a, b) => (b['points'] as int).compareTo(a['points'] as int));
+      
+      return _successResponse('Scoreboard retrieved', {
+        'scoreboard': scoreboard,
+        'playerCount': gameState.playerManager.playerCount,
+        'turnCount': gameState.turn,
+        'currentPlayerId': gameState.currentPlayerId,
+      });
+    } catch (e) {
+      print('Error in _getScoreboard: $e');
+      return _errorResponse('Error retrieving scoreboard: $e');
     }
-    
-    // Sort the scoreboard by score (descending)
-    scoreboardData.sort((a, b) => (b['score'] as int).compareTo(a['score'] as int));
-    
-    return _successResponse('Scoreboard retrieved', {'players': scoreboardData});
   }
   
   Response _addHumanPlayer(Request request, String name) {
-    final result = gameInterface.addHumanPlayer(name);
-    return _successResponse(result);
+    try {
+      final result = gameInterface.addHumanPlayer(name);
+      // Assign starting settlers to all players
+      final initService = container.read(initGameForGuiServiceProvider);
+      initService.giveStartingUnitsToAllPlayers();
+      return _successResponse(result);
+    } catch (e) {
+      return _errorResponse('Error adding human player: $e');
+    }
   }
   
   Response _addAIPlayer(Request request, String name) {
-    final result = gameInterface.addAIPlayer(name);
-    return _successResponse(result);
+    try {
+      final result = gameInterface.addAIPlayer(name);
+      // Assign starting settlers to all players 
+      final initService = container.read(initGameForGuiServiceProvider);
+      initService.giveStartingUnitsToAllPlayers();
+      return _successResponse(result);
+    } catch (e) {
+      return _errorResponse('Error adding AI player: $e');
+    }
   }
   
   Response _removePlayer(Request request, String playerId) {

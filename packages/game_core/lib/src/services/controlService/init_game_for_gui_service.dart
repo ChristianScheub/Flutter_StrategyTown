@@ -212,6 +212,11 @@ class InitGameForGuiService {
     }
   }
 
+  /// Public wrapper to give all players starting settlers
+  void giveStartingUnitsToAllPlayers() {
+    _giveStartingUnitsToAllPlayers();
+  }
+
   /// Gibt allen Spielern einen Startsiedler
   void _giveStartingUnitsToAllPlayers() {
     final gameState = _ref.read(gameStateProvider);
@@ -219,7 +224,10 @@ class InitGameForGuiService {
     
     // Hole alle Spieler-IDs
     final allPlayerIds = gameState.playerManager.playerIds;
-    if (allPlayerIds.isEmpty) return;
+    if (allPlayerIds.isEmpty) {
+      print('Keine Spieler zum Initialisieren gefunden');
+      return;
+    }
     
     final updatedUnits = <Unit>[...gameState.units];
     
@@ -228,21 +236,22 @@ class InitGameForGuiService {
     
     for (int i = 0; i < allPlayerIds.length; i++) {
       final playerId = allPlayerIds[i];
-      final startPosition = startPositions[i];
-      
-      // Erstelle einen Siedler für diesen Spieler
-      final settler = UnitFactory.createUnit(
-        UnitType.settler, 
-        startPosition, 
-        ownerID: playerId,
-        currentTurn: gameState.turn,
-      );
-      
-      updatedUnits.add(settler);
-      print('Siedler erstellt für Spieler $playerId bei Position ($startPosition)');
+      if (!gameState.playerHasUnits(playerId)) { // Only give units if player doesn't have any
+        final startPosition = startPositions[i];
+        
+        // Erstelle einen Siedler für diesen Spieler
+        final settler = UnitFactory.createUnit(
+          UnitType.settler, 
+          startPosition, 
+          ownerID: playerId,
+          currentTurn: gameState.turn,
+        );
+        
+        updatedUnits.add(settler);
+        print('Siedler erstellt für Spieler $playerId bei Position ($startPosition)');
+      }
     }
     
-    // Aktualisiere den GameState mit allen neuen Siedlern
     notifier.updateState(gameState.copyWith(units: updatedUnits));
   }
   
